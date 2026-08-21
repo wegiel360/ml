@@ -4826,6 +4826,8 @@
         camera.position.copy(c2).add(dir.multiplyScalar(renderDist));
         camera.lookAt(c2);
         renderer.render(scene, camera);
+        cctx.fillStyle = bgColor;
+        cctx.fillRect(0, 0, W, H);
         cctx.drawImage(renderer.domElement, 0, 0, W, H);
         const px = cctx.getImageData(0, 0, W, H).data;
         raw.set(px);
