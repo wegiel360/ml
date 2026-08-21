@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0f1a" />
-  <title>Masło3D - wydruki 3D</title>
-  <meta name="description" content="Masło3D - system zamówień wydruków 3D dla społeczności szkolnej. Kolejka oczekujących i śledzenie zamówienia." />
+  <title>Masło Lab - wydruki 3D</title>
+  <meta name="description" content="Masło Lab - system zamówień wydruków 3D dla społeczności szkolnej. Kolejka oczekujących i śledzenie zamówienia." />
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <link rel="apple-touch-icon" href="logo-180.png" />
 
@@ -45,7 +45,7 @@
 
   <!-- ============================================================
        F I R E B A S E  (Compat SDK - Realtime Database)
-       Prawdziwa konfiguracja projektu Masło3D (maslo-3d).
+       Prawdziwa konfiguracja projektu Masło Lab (maslo-3d).
        ============================================================ -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -255,8 +255,8 @@
   <nav id="app-nav" aria-label="Nawigacja główna">
     <div class="max-w-6xl mx-auto px-4 py-2 flex items-center gap-2 flex-wrap">
       <a href="?" data-nav="shop" class="nav-item" title="Sklep">
-        <img src="logo-64.png" alt="Logo Masło3D" class="w-9 h-9 rounded-lg object-cover" />
-        <span class="hidden sm:inline font-bold text-white text-base">Masło3D</span>
+        <img src="logo-64.png" alt="Logo Masło Lab" class="w-9 h-9 rounded-lg object-cover" />
+        <span class="hidden sm:inline font-bold text-white text-base">Masło Lab</span>
       </a>
       <span class="flex-1"></span>
       <button type="button" class="nav-item" data-nav="shop" title="Sklep">
@@ -551,7 +551,7 @@
     const ORDER_MIN_INTERVAL_MS = 2 * 60 * 1000;
     const ORDER_MAX_ITEMS = 6;
     // Klucz localStorage z czasem ostatniego złożonego zamówienia
-    const LAST_ORDER_KEY = 'maslo3d_last_order';
+    const LAST_ORDER_KEY = 'maslolab_last_order';
 
     // Centralny stan aplikacji (aktualizowany przez listenery Firebase)
     let settings = { mode: 'queue', banner: '', adminPasswordHash: '', whistle: true }; // tryb, komunikat, hash hasła, gwizdek
@@ -622,7 +622,7 @@
     };
 
     // Klucz do przechowywania koszyka w localStorage
-    const CART_KEY = 'maslo3d_cart';
+    const CART_KEY = 'maslolab_cart';
 
     /* --- Escapowanie HTML (ochrona przed XSS) --- */
     function esc(s) {
@@ -660,7 +660,7 @@
     }
 
     /* --- Pełny link do strony / śledzenia --- */
-    // Podstawa (prefiks repozytorium GitHub Pages, np. /maslo3d/ — lub / na domenie)
+    // Podstawa (prefiks repozytorium GitHub Pages, np. / — lub / na domenie)
     function basePath() {
       return window.location.pathname.replace(/\/[^\/]*$/, '/');
     }
@@ -674,7 +674,7 @@
       return pageUrl() + '?o=' + orderCode;
     }
 
-    /* --- Ładne adresy produktów: /maslo3d/burza-v5 (slug z nazwy) --- */
+    /* --- Ładne adresy produktów: /burza-v5 (slug z nazwy) --- */
     function slugify(text) {
       var map = { 'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n', 'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z' };
       return String(text || '').toLowerCase()
@@ -1112,7 +1112,7 @@
       const params = new URLSearchParams(window.location.search);
       const code = params.get('o');
       const orderId = params.get('orderId');
-      // Produkt przez ?p=UUID albo ładny adres /maslo3d/slug-produktu
+      // Produkt przez ?p=UUID albo ładny adres /slug-produktu
       const slugSeg = currentPathSegment();
       const productId = params.get('p') || productIdBySlug(slugSeg);
       const isAdmin = params.get('admin') === 'true' || /\/admin\/?$/.test(window.location.pathname);
@@ -3500,7 +3500,7 @@
     /* ------------------------------------------------------------------
        LOGOWANIE DO PANELU ADMINISTRATORA (hasło porównywane z hashem w bazie)
        ------------------------------------------------------------------ */
-    const ADMIN_AUTH_KEY = 'maslo3d_admin_auth';
+    const ADMIN_AUTH_KEY = 'maslolab_admin_auth';
 
     // Czy sesja admina jest zalogowana (zachowane na czas przeglądarki)
     function isAdminAuthed() {
@@ -3904,7 +3904,7 @@
       <main class="flex-1 flex items-center justify-center px-4 py-10">
         <div id="tracking-box" class="w-full"></div>
       </main>
-      <footer class="text-center text-sm text-slate-500 py-6">Masło3D</footer>
+      <footer class="text-center text-sm text-slate-500 py-6">Masło Lab</footer>
     </div>
   </div>
 
@@ -3914,7 +3914,7 @@
       <main class="flex-1 px-4 py-8">
         <div id="product-detail-box" class="max-w-5xl mx-auto"></div>
       </main>
-      <footer class="text-center text-sm text-slate-500 py-6">Masło3D</footer>
+      <footer class="text-center text-sm text-slate-500 py-6">Masło Lab</footer>
     </div>
   </div>
 
@@ -3954,7 +3954,7 @@
           </div>
         </div>
       </main>
-      <footer class="text-center text-sm text-slate-500 py-6">Masło3D</footer>
+      <footer class="text-center text-sm text-slate-500 py-6">Masło Lab</footer>
     </div>
   </div>
 
@@ -4398,21 +4398,21 @@
 
     // Obrót początkowy Y animacji 360 (stopnie) — zapisywany lokalnie.
     let animYDeg = 0;
-    try { animYDeg = parseFloat(localStorage.getItem('maslo3d_anim_y')) || 0; } catch (e) {}
+    try { animYDeg = parseFloat(localStorage.getItem('maslolab_anim_y')) || 0; } catch (e) {}
     window.__setAnimY = function (val) {
       animYDeg = Math.max(-180, Math.min(180, parseFloat(val) || 0));
       var lbl = document.getElementById('anim-y-value');
       if (lbl) lbl.textContent = Math.round(animYDeg);
-      try { localStorage.setItem('maslo3d_anim_y', String(animYDeg)); } catch (e) {}
+      try { localStorage.setItem('maslolab_anim_y', String(animYDeg)); } catch (e) {}
     };
     // Wielkość modelu w animacji (%) — mniejszy model = mniej kolorów = mniejszy plik GIF.
     let animSizePct = 100;
-    try { animSizePct = parseFloat(localStorage.getItem('maslo3d_anim_size')) || 100; } catch (e) {}
+    try { animSizePct = parseFloat(localStorage.getItem('maslolab_anim_size')) || 100; } catch (e) {}
     window.__setAnimSize = function (val) {
       animSizePct = Math.max(1, Math.min(200, parseFloat(val) || 100));
       var lbl = document.getElementById('anim-size-value');
       if (lbl) lbl.textContent = Math.round(animSizePct);
-      try { localStorage.setItem('maslo3d_anim_size', String(animSizePct)); } catch (e) {}
+      try { localStorage.setItem('maslolab_anim_size', String(animSizePct)); } catch (e) {}
     };
 
     async function generateModelThumbnail(bytes, format) {
