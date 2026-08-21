@@ -749,6 +749,7 @@
       'druku': 'print', 'Brak w magazynie': 'Out of stock', 'Stan: ': 'Stock: ',
       'Zestaw (': 'Bundle (', 'el.)': ' items)',
       'Pobierz plik 3D (': 'Download 3D file (', 'Model autora': 'Author model',
+      'Zrobione przez @': 'Made by @',
       'Dodaj do koszyka': 'Add to cart', 'Produkt chwilowo niedostępny.': 'Item temporarily unavailable.',
       'Ładowanie…': 'Loading…', 'Produkt nie znaleziony.': 'Item not found.',
       'Wróć do sklepu': 'Back to shop',
@@ -1773,6 +1774,7 @@
         '    <h1 class="text-2xl font-bold text-white">' + esc(p.name) + '</h1>' +
         '  </div>' +
         (p.desc ? '    <p class="text-slate-400 mt-4 leading-relaxed">' + esc(p.desc) + '</p>' : '') +
+        (p.madeBy ? '    <p class="mt-4 text-2xl font-extrabold text-accent drop-shadow-[0_0_18px_rgba(0,148,115,0.45)]">' + t('Zrobione przez @') + esc(p.madeBy) + '</p>' : '') +
         '    <div class="mt-4 flex flex-wrap gap-2">' +
         '      <span class="bg-white/5 border border-white/10 rounded-full px-3 py-1 text-sm text-slate-300">' + fmtTime(p.printTimeSec) + ' ' + t('druku') + '</span>' +
         (p.weight ? '      <span class="bg-white/5 border border-white/10 rounded-full px-3 py-1 text-sm text-slate-400">' + fmtGrams(p.weight) + '</span>' : '') +
@@ -3326,6 +3328,7 @@
       productPhotos = (p.photos && Array.isArray(p.photos)) ? p.photos.slice() : [];
       renderPhotoPreviews();
       document.getElementById('product-author-link').value = p.authorLink || '';
+      document.getElementById('product-made-by').value = p.madeBy || '';
       document.getElementById('product-bundle').checked = !!(p.bundle && p.bundle.items);
       bundleItems = (p.bundle && p.bundle.items) ? JSON.parse(JSON.stringify(p.bundle.items)) : [];
       renderBundleList();
@@ -3452,6 +3455,7 @@
           bundle = { items: bundleItems.slice() };
         }
         const authorLink = document.getElementById('product-author-link').value.trim() || '';
+        const madeBy = document.getElementById('product-made-by').value.trim() || '';
         const photos = productPhotos.slice();
         const previewB122 = document.getElementById('product-preview-data').value;
         const variantOf = document.getElementById('product-variant-toggle').checked ? (document.getElementById('variant-parent').value || '') : '';
@@ -3472,7 +3476,7 @@
           printTimeSecBambus: printTimeSecBambus, manualTimeSecBambus: manualTimeSecBambus,
           stock: stock, listed: listed, downloadEnabled: downloadEnabled,
           whistleFreq: whistleFreq, whistleEnabled: whistleEnabled,
-          bundle: bundle, authorLink: authorLink, color: productColor, photos: photos,
+          bundle: bundle, authorLink: authorLink, madeBy: madeBy, color: productColor, photos: photos,
           variantOf: variantOf
         };
 
@@ -4712,7 +4716,12 @@
               <p class="text-xs text-slate-500 mt-1">Miniaturka produktu to obrazek z modelu 3D. Te zdjęcia dodasz do galerii przeglądanej na podstronie oferty.</p>
             </div>
             <div>
-              <label class="block text-sm text-slate-400 mb-1">Link do modelu autora (opcjonalnie)</label>
+              <label class="block text-sm text-slate-400 mb-1">Zrobione przez @ (autor — duży napis na stronie oferty)</label>
+              <input id="product-made-by" type="text" placeholder="np. kowalski_3d"
+                class="w-full bg-base border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-accent focus:outline-none" />
+            </div>
+            <div>
+              <label class="block text-sm text-slate-400 mb-1">Link do modelu autora</label>
               <input id="product-author-link" type="text" placeholder="https://www.thingiverse.com/thing:12345"
                 class="w-full bg-base border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-accent focus:outline-none" />
             </div>
