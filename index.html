@@ -4,6 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0f1a" />
+  <meta property="og:title" content="Masło Lab — wydruki 3D" />
+  <meta property="og:description" content="System zamówień wydruków 3D dla społeczności szkolnej. Zamawiaj online i śledź status realizacji." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://wegiel360.github.io/ml/logo-180.png" />
+  <meta name="twitter:card" content="summary" />
   <title>Masło Lab - wydruki 3D</title>
   <meta name="description" content="Masło Lab - system zamówień wydruków 3D dla społeczności szkolnej. Kolejka oczekujących i śledzenie zamówienia." />
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
@@ -317,6 +322,7 @@
         </button>
         <div id="cart-preview" class="hidden"></div>
       </div>
+      <button type="button" id="lang-toggle" class="nav-item font-semibold" title="Language / Język">EN</button>
       <button type="button" class="nav-item" data-nav="admin" title="Panel">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
         <span class="hidden md:inline">Panel</span>
@@ -643,7 +649,7 @@
     const LAST_ORDER_KEY = 'maslolab_last_order';
 
     
-    let settings = { mode: 'queue', banner: '', adminPasswordHash: '', whistle: true, printersStatus: {} };
+    let settings = { mode: 'queue', banner: '', adminPasswordHash: '', printersStatus: {} };
     let firstDataLoaded = false; 
     let ordersLoaded = false; 
     let products = {}; 
@@ -713,11 +719,109 @@
     const PRINTER_STATUS_META = {
       unavailable: { label: 'Niedostępna', cls: 'text-slate-400 bg-slate-500/10 border-white/10', dot: '#94a3b8' },
       maintenance: { label: 'W trakcie konserwacji', cls: 'text-orange-300 bg-orange-400/10 border-orange-400/30 animate-pulse', dot: '#fb923c' },
-      closed: { label: 'Laboratorium zamknięte', cls: 'text-violet-300 bg-violet-400/10 border-violet-400/30', dot: '#a78bfa' }
+      closed: { label: 'Po lekcjach', cls: 'text-violet-300 bg-violet-400/10 border-violet-400/30', dot: '#a78bfa' }
     };
 
     
     const CART_KEY = 'maslolab_cart';
+
+    /* --- Język interfejsu (widoki klienta): PL domyslnie, EN opcjonalnie --- */
+    var LANG = 'pl';
+    try { LANG = localStorage.getItem('maslolab_lang') === 'en' ? 'en' : 'pl'; } catch (e) {}
+    var I18N_EN = {
+      'Sklep': 'Shop', 'Status': 'Status', 'Koszyk': 'Cart', 'Panel': 'Admin', 'Wyloguj': 'Log out',
+      'Zamów własny wydruk 3D': 'Order your own 3D print',
+      'Wybierz oferty, a koszyk pokaże łączną wagę. Odbiór w szkole.': 'Pick items and the cart will show total weight. Pickup at school.',
+      'Dostępne oferty': 'Available items',
+      'Szukaj po nazwie...': 'Search by name...',
+      'Nazwa (A–Z)': 'Name (A–Z)', 'Czas druku (od najkrótszego)': 'Print time (shortest first)',
+      'Waga (od najlżejszego)': 'Weight (lightest first)', 'Stan magazynowy': 'Stock',
+      'Brak ofert w sklepie.': 'No items in the shop.',
+      'Zajrzyj wkrótce - nowe wydruki pojawią się tutaj.': 'Check back soon - new prints will appear here.',
+      'Do koszyka': 'Add to cart', 'Odtwórz': 'Play tone', 'Porównaj': 'Compare', 'Wyczyść': 'Clear',
+      'Porównanie (': 'Comparison (', 'Dodaj do porównania': 'Add to comparison',
+      'Porównanie ofert': 'Item comparison',
+      'Dodaj co najmniej 2 oferty do porównania.': 'Add at least 2 items to compare.',
+      'Obraz': 'Image', 'Nazwa': 'Name', 'Czas druku': 'Print time', 'Waga': 'Weight',
+      'Stan magazynu': 'Stock', 'Gwizdek': 'Whistle',
+      'Drukowanie…': 'Printing…', 'Wolna': 'Free',
+      'Niedostępna': 'Unavailable', 'W trakcie konserwacji': 'Under maintenance', 'Po lekcjach': 'After classes',
+      'druku': 'print', 'Brak w magazynie': 'Out of stock', 'Stan: ': 'Stock: ',
+      'Zestaw (': 'Bundle (', 'el.)': ' items)',
+      'Pobierz plik 3D (': 'Download 3D file (', 'Model autora': 'Author model',
+      'Dodaj do koszyka': 'Add to cart', 'Produkt chwilowo niedostępny.': 'Item temporarily unavailable.',
+      'Ładowanie…': 'Loading…', 'Produkt nie znaleziony.': 'Item not found.',
+      'Wróć do sklepu': 'Back to shop',
+      'Błąd animacji': 'Animation error', 'Warianty:': 'Variants:',
+      'Dane': 'Details', 'Dostawa': 'Delivery', 'Podsum.': 'Summary',
+      'Dalej': 'Next', 'Wejdź do kolejki': 'Join the queue', 'Zamknij': 'Close',
+      'Usuń': 'Remove', 'Twój koszyk jest pusty.': 'Your cart is empty.',
+      'Koszyk jest pusty': 'Cart is empty', 'Koszyk jest pusty.': 'Cart is empty.',
+      'Imię *': 'First name *', 'Inicjał nazwiska (opcjonalnie)': 'Last-name initial (optional)',
+      'Podawanie imienia i inicjału jest potrzebne TYLKO do procesu dostawy.': 'Your name and initial are needed ONLY for delivery.',
+      'Płatność': 'Payment', 'Brak (przy odbiorze)': 'None (pay on pickup)',
+      'Tryb zbierania kolejki — zamówienie poczeka na realizację.': 'Queue mode - your order will wait to be processed.',
+      'Zamówienie trafi do druku.': 'Your order will go straight to printing.',
+      'Odbierający': 'Pickup person', 'Łączna waga': 'Total weight',
+      'Zamówienie #': 'Order #', 'Jesteś ': 'You are ', '.': '.', ' w kolejce': ' in queue',
+      ' osób w kolejce)': ' people in queue)',
+      'Szacowany czas dostawy': 'Estimated delivery', 'nieznany': 'unknown',
+      'Śledź zamówienie': 'Track order',
+      'Status zamówienia': 'Order status', 'Na żywo': 'Live', 'Postęp realizacji': 'Progress',
+      'Drukuje na: ': 'Printing on: ',
+      'Nie znaleziono zamówienia': 'Order not found',
+      'Nie ma zamówienia o podanym numerze w systemie. Sprawdź poprawność numeru i spróbuj ponownie.': 'No order with this number. Check the code and try again.',
+      'Zamówienie nie istnieje lub zostało anulowane przez administratora': 'The order does not exist or was cancelled by the administrator',
+      'Powód anulowania: ': 'Cancellation reason: ',
+      'Szukam zamówienia...': 'Looking up your order...',
+      'Sprawdzam numer w systemie.': 'Checking the number in the system.',
+      'Szacowany czas druku': 'Estimated print time',
+      'W kolejce': 'Queued', 'Drukuje się': 'Printing', 'W drodze': 'On the way', 'Doręczone': 'Delivered',
+      'Zamówienie trolowskie / Fałszywe': 'Troll / fake order',
+      'Brak materiału (Filamentu)': 'Out of filament',
+      'Błąd wydruku / Awaria drukarki': 'Print failed / printer issue',
+      'Inny powód': 'Other reason',
+      'Śledź paczkę': 'Track your order',
+      'Wpisz 3-cyfrowy numer zamówienia otrzymany po złożeniu.': 'Enter the 3-digit order number you received.',
+      'Numer zamówienia': 'Order number', 'Otwórz': 'Open', 'Anuluj': 'Cancel',
+      'Podaj 3-cyfrowy numer zamówienia.': 'Enter the 3-digit order number.',
+      'Dodano do koszyka': 'Added to cart',
+      'Osiągnięto stan magazynowy (': 'Stock limit reached (',
+      'Maksymalnie ': 'Maximum ', ' różnych ofert w jednym zamówieniu.': ' different items per order.',
+      'Odczekaj jeszcze ': 'Wait ', ' s przed złożeniem kolejnego zamówienia.': ' s before placing another order.',
+      'Dziękujemy, ': 'Thank you, ', '!': '!'
+    };
+    function t(str) {
+      if (LANG !== 'en') return str;
+      var v = I18N_EN[str];
+      return v === undefined ? str : v;
+    }
+    function setLang(lang) {
+      LANG = lang === 'en' ? 'en' : 'pl';
+      try { localStorage.setItem('maslolab_lang', LANG); } catch (e) {}
+      document.documentElement.lang = LANG;
+      applyStaticI18n();
+      updateLangToggle();
+      route();
+      renderCartStep();
+    }
+    function applyStaticI18n() {
+      document.querySelectorAll('[data-i18n]').forEach(function (el) { el.textContent = t(el.getAttribute('data-i18n')); });
+      document.querySelectorAll('[data-i18n-ph]').forEach(function (el) { el.placeholder = t(el.getAttribute('data-i18n-ph')); });
+      var cmpLbl = document.getElementById('cmp-label-text');
+      if (cmpLbl) cmpLbl.textContent = t('Porównanie (');
+      var sortEl = document.getElementById('shop-sort');
+      if (sortEl) {
+        var cur = shopSort;
+        sortEl.innerHTML = ['name|Nazwa (A–Z)', 'time|Czas druku (od najkrótszego)', 'weight|Waga (od najlżejszego)', 'stock|Stan magazynowy']
+          .map(function (o) { var p = o.split('|'); return '<option value="' + p[0] + '"' + (cur === p[0] ? ' selected' : '') + '>' + t(p[1]) + '</option>'; }).join('');
+        sortEl.value = cur;
+      }
+    }
+    function updateLangToggle() {
+      var b = document.getElementById('lang-toggle');
+      if (b) b.textContent = LANG === 'pl' ? 'EN' : 'PL';
+    }
 
     
     function esc(s) {
@@ -1363,7 +1467,7 @@
     function startListeners() {
       
       unsubSettings = db.collection('settings').doc('main').onSnapshot(function (snap) {
-        settings = snap.exists ? Object.assign({ whistle: true }, snap.data()) : settings;
+        settings = snap.exists ? Object.assign({}, snap.data()) : settings;
         if (!firstDataLoaded && productsLoaded) firstDataLoaded = true;
         
         if (!(snap.metadata && snap.metadata.hasPendingWrites)) scheduleRender();
@@ -1460,8 +1564,8 @@
       if (keys.length === 0) {
         grid.innerHTML =
           '<div class="col-span-full text-center py-16 text-slate-400">' +
-          '  <p class="text-lg">Brak ofert w sklepie.</p>' +
-          '  <p class="text-sm mt-1">Zajrzyj wkrótce - nowe wydruki pojawią się tutaj.</p>' +
+  '  <p class="text-lg">' + t('Brak ofert w sklepie.') + '</p>' +
+  '  <p class="text-sm mt-1">' + t('Zajrzyj wkrótce - nowe wydruki pojawią się tutaj.') + '</p>' +
           '</div>';
         return;
       }
@@ -1513,10 +1617,10 @@
             (p.weight ? '<span class="text-xs text-slate-400">' + fmtGrams(p.weight) + '</span>' : '') +
           '</div>' +
           '<div class="mt-auto flex items-center justify-between">' +
-            (settings.whistle && p.whistleEnabled !== false && p.whistleFreq
-              ? '<button type="button" data-whistle="' + id + '" class="text-xs whistle-btn rounded-full px-2.5 py-1">Odtwórz</button>'
+            (p.whistleEnabled !== false && p.whistleFreq
+              ? '<button type="button" data-whistle="' + id + '" class="text-xs whistle-btn rounded-full px-2.5 py-1">' + t('Odtwórz') + '</button>'
               : '<span></span>') +
-            '<button type="button" data-add-cart="' + id + '" class="text-xs px-3 py-1.5 rounded-full bg-accent text-slate-900 font-semibold transition">Do koszyka</button>' +
+            '<button type="button" data-add-cart="' + id + '" class="text-xs px-3 py-1.5 rounded-full bg-accent text-slate-900 font-semibold transition">' + t('Do koszyka') + '</button>' +
           '</div>' +
         '</div>';
       return card;
@@ -1545,7 +1649,7 @@
               ? 'text-emerald-300 bg-emerald-400/10 border-emerald-400/30 animate-pulse'
               : 'text-slate-300 bg-slate-500/5 border-white/10')) + '">' +
           '<span class="w-2 h-2 rounded-full inline-block" style="background:' + (meta ? meta.dot : (isActive ? '#6ee7b7' : '#64748b')) + '"></span>' +
-          esc(pr.name) + ' · ' + (meta ? meta.label : (isActive ? 'Drukowanie…' : 'Wolna')) +
+          esc(pr.name) + ' · ' + (meta ? t(meta.label) : (isActive ? t('Drukowanie…') : t('Wolna'))) +
           '</div>' +
           '<div data-printer-img="' + key + '" class="w-40 h-40 flex items-center justify-center">' +
           '  <img class="max-h-full max-w-full object-contain drop-shadow-lg" alt="' + esc(pr.name) + '" loading="lazy" decoding="async" />' +
@@ -1600,7 +1704,7 @@
       if (!p) {
         if (!firstDataLoaded) {
           
-          box.innerHTML = '<div class="text-center py-16"><div class="inline-block w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mb-3"></div><p class="text-slate-400 text-lg">Ładowanie…</p></div>';
+          box.innerHTML = '<div class="text-center py-16"><div class="inline-block w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mb-3"></div><p class="text-slate-400 text-lg">' + t('Ładowanie…') + '</p></div>';
           return;
         }
         box.innerHTML = '<div class="text-center py-16"><p class="text-slate-400 text-lg">Produkt nie znaleziony.</p><a href="?" class="text-accent text-sm mt-4 inline-block">&larr; Wróć do sklepu</a></div>';
@@ -1614,7 +1718,7 @@
         var s = imageSrcFor(ph);
         if (s && s.length > 20) galleryImages.push(s);
       });
-      var isWhistle = settings.whistle && p.whistleEnabled !== false && p.whistleFreq;
+      var isWhistle = p.whistleEnabled !== false && p.whistleFreq;
       var isBundle = !!(p.bundle && p.bundle.items);
       var outOfStock = settings.mode === 'active' && (!p.stock || p.stock <= 0);
       var totalSlides = galleryImages.length + (p.preview ? 1 : 0);
@@ -1636,7 +1740,7 @@
       var chipsHtml = '';
       if (siblings.length > 1) {
         chipsHtml = '<div class="flex flex-wrap items-center gap-2 mb-6">' +
-          '<span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Warianty:</span>' +
+          '<span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">' + t('Warianty:') + '</span>' +
           siblings.map(function (sid) {
             var sp = products[sid];
             var act = sid === productId;
@@ -1670,20 +1774,20 @@
         '  </div>' +
         (p.desc ? '    <p class="text-slate-400 mt-4 leading-relaxed">' + esc(p.desc) + '</p>' : '') +
         '    <div class="mt-4 flex flex-wrap gap-2">' +
-        '      <span class="bg-white/5 border border-white/10 rounded-full px-3 py-1 text-sm text-slate-300">' + fmtTime(p.printTimeSec) + ' druku</span>' +
+        '      <span class="bg-white/5 border border-white/10 rounded-full px-3 py-1 text-sm text-slate-300">' + fmtTime(p.printTimeSec) + ' ' + t('druku') + '</span>' +
         (p.weight ? '      <span class="bg-white/5 border border-white/10 rounded-full px-3 py-1 text-sm text-slate-400">' + fmtGrams(p.weight) + '</span>' : '') +
-        (isBundle ? '      <span class="text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded-full px-3 py-1 text-sm">Zestaw (' + p.bundle.items.length + ' el.)</span>' : '') +
+        (isBundle ? '      <span class="text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded-full px-3 py-1 text-sm">' + t('Zestaw (') + p.bundle.items.length + t(' el.)') + '</span>' : '') +
         (outOfStock
-          ? '      <span class="text-red-300 bg-red-400/10 border border-red-400/30 rounded-full px-3 py-1 text-sm font-bold">Brak w magazynie</span>'
-          : (p.stock != null ? '      <span class="text-emerald-300 bg-emerald-400/10 border border-emerald-400/30 rounded-full px-3 py-1 text-sm">Stan: ' + p.stock + '</span>' : '')) +
+          ? '      <span class="text-red-300 bg-red-400/10 border border-red-400/30 rounded-full px-3 py-1 text-sm font-bold">' + t('Brak w magazynie') + '</span>'
+          : (p.stock != null ? '      <span class="text-emerald-300 bg-emerald-400/10 border border-emerald-400/30 rounded-full px-3 py-1 text-sm">' + t('Stan: ') + p.stock + '</span>' : '')) +
         '    </div>' +
-        (isWhistle ? '<button id="pd-whistle" class="whistle-btn mt-4 px-4 py-2 rounded-xl text-sm w-fit">Odtwórz (' + whistleLabel + ')</button>' : '') +
-        (p.downloadEnabled !== false && p.modelFile && p.modelFile.data ? '<button id="pd-download" data-download-model="' + productId + '" class="mt-2 px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-400 text-sm border border-emerald-500/30 hover:bg-emerald-500/30 transition w-fit inline-block text-center">Pobierz plik 3D (' + esc(p.modelFile.name) + ')</button>' : '') +
-        (p.authorLink ? '<a href="' + esc(p.authorLink) + '" target="_blank" rel="noopener" class="mt-2 px-4 py-2 rounded-xl bg-violet-500/20 text-violet-400 text-sm border border-violet-500/30 hover:bg-violet-500/30 transition w-fit inline-block text-center">Model autora &nearr;</a>' : '') +
+        (isWhistle ? '<button id="pd-whistle" class="whistle-btn mt-4 px-4 py-2 rounded-xl text-sm w-fit">' + t('Odtwórz (') + whistleLabel + ')</button>' : '') +
+        (p.downloadEnabled !== false && p.modelFile && p.modelFile.data ? '<button id="pd-download" data-download-model="' + productId + '" class="mt-2 px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-400 text-sm border border-emerald-500/30 hover:bg-emerald-500/30 transition w-fit inline-block text-center">' + t('Pobierz plik 3D (') + esc(p.modelFile.name) + ')</button>' : '') +
+        (p.authorLink ? '<a href="' + esc(p.authorLink) + '" target="_blank" rel="noopener" class="mt-2 px-4 py-2 rounded-xl bg-violet-500/20 text-violet-400 text-sm border border-violet-500/30 hover:bg-violet-500/30 transition w-fit inline-block text-center">' + t('Model autora') + ' &nearr;</a>' : '') +
         '    <div class="mt-6 pt-6 border-t border-white/10">' +
         (outOfStock
-          ? '      <p class="text-red-400 text-sm">Produkt chwilowo niedostępny.</p>'
-          : '      <button id="pd-add-cart" class="w-full py-3 rounded-xl font-bold text-base bg-accent text-slate-900 shadow-lg shadow-accent/20 transition-all">Dodaj do koszyka</button>') +
+          ? '      <p class="text-red-400 text-sm">' + t('Produkt chwilowo niedostępny.') + '</p>'
+          : '      <button id="pd-add-cart" class="w-full py-3 rounded-xl font-bold text-base bg-accent text-slate-900 shadow-lg shadow-accent/20 transition-all">' + t('Dodaj do koszyka') + '</button>') +
         '    </div>' +
         '  </div>' +
         '</div>';
@@ -1772,10 +1876,15 @@
 
       if (!outOfStock) {
         document.getElementById('pd-add-cart').addEventListener('click', function () {
-          cart[productId] = (cart[productId] || 0) + 1;
+          var next = (cart[productId] || 0) + 1;
+          if (settings.mode === 'active' && p.stock != null && next > p.stock) {
+            flash(t('Osiągnięto stan magazynowy (') + p.stock + ')');
+            return;
+          }
+          cart[productId] = next;
           saveCart();
           renderCartStep();
-          flash('Dodano do koszyka');
+          flash(t('Dodano do koszyka'));
         });
       }
       if (isWhistle) {
@@ -1802,12 +1911,61 @@
 
     
     
+    function getPlaybackPct() {
+      try { return Math.min(300, Math.max(50, parseInt(localStorage.getItem('maslolab_anim_speed'), 10) || 100)); } catch (e) { return 100; }
+    }
+    // Retroaktywne odtwarzanie: przeskaluj pola delay w blokach GCE GIF-a
+    function applyGifPlayback(bytes, pct) {
+      if (!pct || pct === 100 || bytes.length < 20) return bytes;
+      var mult = 100 / pct;
+      var out = new Uint8Array(bytes);
+      var i = 6;
+      while (i + 7 < out.length) {
+        if (out[i] === 0x21 && out[i + 1] === 0xF9 && out[i + 2] === 0x04) {
+          var cur = out[i + 4] | (out[i + 5] << 8);
+          var nd = Math.min(65535, Math.max(2, Math.round(cur * mult)));
+          out[i + 4] = nd & 255;
+          out[i + 5] = (nd >> 8) & 255;
+          i += 8;
+        } else i++;
+      }
+      return out;
+    }
+    window.__setPlayback = function (val) {
+      var pct = Math.min(300, Math.max(50, parseInt(val, 10) || 100));
+      try { localStorage.setItem('maslolab_anim_speed', String(pct)); } catch (e) {}
+      var lbl3 = document.getElementById('anim-playback-value');
+      if (lbl3) lbl3.textContent = String(pct);
+      Object.keys(__previewCache).forEach(function (k) {
+        try { URL.revokeObjectURL(__previewCache[k].url); } catch (e) {}
+        delete __previewCache[k];
+      });
+      scheduleRender();
+      var params = new URLSearchParams(window.location.search);
+      var code = params.get('o');
+      var oidParam = params.get('orderId');
+      if (code) initTracking('o:' + code);
+      else if (oidParam) initTracking('id:' + oidParam);
+      else {
+        var pid = params.get('p') || productIdBySlug(currentPathSegment());
+        if (pid && isViewOpen('view-product')) renderProductDetail(pid);
+      }
+    };
+    (function () {
+      var ps = document.getElementById('anim-playback-slider');
+      var pv = getPlaybackPct();
+      if (ps) ps.value = String(pv);
+      var plbl = document.getElementById('anim-playback-value');
+      if (plbl) plbl.textContent = String(pv);
+    })();
+
     let __previewCache = {};
     function loadPreviewGif(productId) {
       if (!productId || !products[productId] || !products[productId].preview) return Promise.resolve('');
       var meta = products[productId].preview;
+      var pct = getPlaybackPct();
       var cached = __previewCache[productId];
-      if (cached && cached.size === (meta.size || 0)) return Promise.resolve(cached.url);
+      if (cached && cached.size === (meta.size || 0) && cached.pct === pct) return Promise.resolve(cached.url);
       if (cached) { try { URL.revokeObjectURL(cached.url); } catch (e) {} delete __previewCache[productId]; }
       return db.collection('products').doc(productId).collection('preview').orderBy('index').get()
         .then(function (snap) {
@@ -1824,6 +1982,7 @@
             var bin = base122ToBinary(out);
             
             if (bin.length < 6 || bin[0] !== 0x47 || bin[1] !== 0x49 || bin[2] !== 0x46 || bin[3] !== 0x38) return '';
+            bin = applyGifPlayback(bin, pct);
             var blob = new Blob([bin], { type: 'image/gif' });
             var url = URL.createObjectURL(blob);
             var cacheKeys = Object.keys(__previewCache);
@@ -1833,7 +1992,7 @@
                 delete __previewCache[k];
               });
             }
-            __previewCache[productId] = { url: url, size: meta.size || 0 };
+            __previewCache[productId] = { url: url, size: meta.size || 0, pct: pct };
             return url;
           } catch (e) { return ''; }
         })
@@ -1870,7 +2029,7 @@
         '  <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">' +
         '    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />' +
         '  </svg>' +
-        '  <span class="text-xs font-semibold">Błąd animacji</span>' +
+        '  <span class="text-xs font-semibold">' + t('Błąd animacji') + '</span>' +
         '</div>';
     }
 
@@ -2005,10 +2164,10 @@
         renderCheckoutFooter(footer, 'Dalej', function () { cartStep = 3; renderCartStep(); });
       } else if (cartStep === 3) {
         renderCheckoutDostawa(body);
-        renderCheckoutFooter(footer, 'Dalej', function () { cartStep = 4; renderCartStep(); });
+        renderCheckoutFooter(footer, t('Dalej'), function () { cartStep = 4; renderCartStep(); });
       } else if (cartStep === 4) {
         renderCheckoutPodsumowanie(body);
-        renderCheckoutFooter(footer, 'Wejdź do kolejki', handleCheckout);
+        renderCheckoutFooter(footer, t('Wejdź do kolejki'), handleCheckout);
       } else if (cartStep === 5) {
         renderQueue(body);
         renderQueueFooter(footer);
@@ -2030,7 +2189,7 @@
           '" ' + (done ? '' : 'disabled') + '>' +
           '<span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] ' +
           (active ? 'bg-slate-900/20' : 'bg-white/10') + '">' + (done ? '&#10003;' : n) + '</span>' +
-          esc(name) + '</button>';
+          esc(t(name)) + '</button>';
         if (i < CART_STEPS.length - 1) html += '<span class="text-slate-600 text-xs">·</span>';
       });
       html += '</div>';
@@ -2049,7 +2208,7 @@
     function renderCart(container) {
       var ids = Object.keys(cart).filter(function (id) { return products[id] && cart[id] > 0; });
       if (ids.length === 0) {
-        container.innerHTML = '<p class="text-center text-slate-500 py-8">Twój koszyk jest pusty.</p>';
+        container.innerHTML = '<p class="text-center text-slate-500 py-8">' + t('Twój koszyk jest pusty.') + '</p>';
         return;
       }
       var html = '';
@@ -2187,19 +2346,19 @@
         '      <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />' +
         '    </svg>' +
         '  </div>' +
-        '  <h3 class="text-xl font-bold text-white">Zamówienie #' + esc(o.orderCode) + '</h3>' +
-        '  <p class="text-slate-400 mt-1">Dziękujemy, ' + esc(o.name) + '!</p>' +
+        t('Zamówienie #') + esc(o.orderCode) + '</h3>' +
+        '  <p class="text-slate-400 mt-1">' + t('Dziękujemy, ') + esc(o.name) + t('!') + '</p>' +
         '  <div class="mt-6 space-y-3">' +
         '    <div class="bg-base/60 border border-white/10 rounded-xl p-4">' +
-        '      <p class="text-sm text-slate-400">Jesteś <span id="queue-pos" class="text-white font-bold text-lg inline-block">…</span> w kolejce</p>' +
-        '      <p class="text-sm text-slate-400">(<span id="q-total">…</span> osób w kolejce)</p>' +
+        '      <p class="text-sm text-slate-400">' + t('Jesteś ') + '<span id="queue-pos" class="text-white font-bold text-lg inline-block">…</span>' + t(' w kolejce') + '</p>' +
+        '      <p class="text-sm text-slate-400">(<span id="q-total">…</span>' + t(' osób w kolejce)') + '</p>' +
         '    </div>' +
         '    <div class="bg-base/60 border border-white/10 rounded-xl p-4">' +
-        '      <p class="text-xs text-slate-500 mb-1">Szacowany czas dostawy</p>' +
-        '      <p class="text-white font-medium">' + esc(o.deliveryEstimate || 'nieznany') + '</p>' +
+        '      <p class="text-xs text-slate-500 mb-1">' + t('Szacowany czas dostawy') + '</p>' +
+        '      <p class="text-white font-medium">' + esc(o.deliveryEstimate || t('nieznany')) + '</p>' +
         '    </div>' +
         '  </div>' +
-        '  <a href="' + esc(link) + '" class="mt-5 inline-block text-accent font-semibold">Śledź zamówienie &rarr;</a>' +
+        '  <a href="' + esc(link) + '" class="mt-5 inline-block text-accent font-semibold">' + t('Śledź zamówienie') + ' &rarr;</a>' +
         '</div>';
 
       fetchQueueInfo(o.orderId).then(function (qi) {
@@ -2208,7 +2367,6 @@
         if (pe) pe.textContent = qi.position + '.';
         if (pt) pt.textContent = qi.total;
       });
-
       
       var posEl = document.getElementById('queue-pos');
       if (posEl && !prefersReducedMotion() && typeof window.anime !== 'undefined') {
@@ -2235,7 +2393,7 @@
 
       if (!msg) msg = { innerHTML: '' }; 
 
-      if (!name) { msg.innerHTML = '<p class="text-red-300 text-sm">Podaj imię.</p>'; return; }
+      if (!name) { msg.innerHTML = '<p class="text-red-300 text-sm">' + t('Imię *') + '</p>'; return; }
 
       var displayName = initial ? name + ' ' + initial + '.' : name;
 
@@ -2245,13 +2403,13 @@
       var cooldown = orderCooldownMs();
       if (cooldown > 0) {
         var sec = Math.ceil(cooldown / 1000);
-        msg.innerHTML = '<p class="text-amber-300 text-sm">Odczekaj jeszcze ' + sec + ' s przed złożeniem kolejnego zamówienia.</p>';
+        msg.innerHTML = '<p class="text-amber-300 text-sm">' + t('Odczekaj jeszcze ') + sec + t(' s przed złożeniem kolejnego zamówienia.') + '</p>';
         return;
       }
 
       var distinctCount = Object.keys(cart).filter(function (id) { return products[id] && cart[id] > 0; }).length;
       if (distinctCount > ORDER_MAX_ITEMS) {
-        msg.innerHTML = '<p class="text-red-300 text-sm">Maksymalnie ' + ORDER_MAX_ITEMS + ' różnych ofert w jednym zamówieniu.</p>';
+        msg.innerHTML = '<p class="text-red-300 text-sm">' + t('Maksymalnie ') + ORDER_MAX_ITEMS + t(' różnych ofert w jednym zamówieniu.') + '</p>';
         return;
       }
 
@@ -2403,8 +2561,8 @@
         box.innerHTML =
           '<div class="text-center max-w-md mx-auto">' +
           '  <div class="mx-auto w-12 h-12 rounded-full border-2 border-accent/30 border-t-accent animate-spin mb-4"></div>' +
-          '  <h2 class="text-xl font-bold text-white">Szukam zamówienia...</h2>' +
-          '  <p class="text-slate-400 mt-2 text-sm">Sprawdzam numer w systemie.</p>' +
+          '  <h2 class="text-xl font-bold text-white">' + t('Szukam zamówienia...') + '</h2>' +
+          '  <p class="text-slate-400 mt-2 text-sm">' + t('Sprawdzam numer w systemie.') + '</p>' +
           '</div>';
         return;
       }
@@ -2419,9 +2577,9 @@
             '      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />' +
             '    </svg>' +
             '  </div>' +
-            '  <h2 class="text-xl font-bold text-white">Nie znaleziono zamówienia</h2>' +
-            '  <p class="text-sm text-slate-400 mt-2">Nie ma zamówienia o podanym numerze w systemie. Sprawdź poprawność numeru i spróbuj ponownie.</p>' +
-            '  <a href="' + pageUrl() + '" class="mt-6 inline-block text-accent font-semibold">Wróć do sklepu</a>' +
+            '  <h2 class="text-xl font-bold text-white">' + t('Nie znaleziono zamówienia') + '</h2>' +
+            '  <p class="text-sm text-slate-400 mt-2">' + t('Nie ma zamówienia o podanym numerze w systemie. Sprawdź poprawność numeru i spróbuj ponownie.') + '</p>' +
+            '  <a href="' + pageUrl() + '" class="mt-6 inline-block text-accent font-semibold">' + t('Wróć do sklepu') + '</a>' +
             '</div>';
           return;
         }
@@ -2433,9 +2591,9 @@
           '      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />' +
           '    </svg>' +
           '  </div>' +
-          '  <h2 class="text-xl font-bold text-white">Zamówienie nie istnieje lub zostało anulowane przez administratora</h2>' +
-          (reason ? '<p class="mt-3 text-sm text-slate-400 bg-red-400/10 border border-red-400/30 rounded-xl px-4 py-3">Powód anulowania: <span class="text-red-300 font-semibold">' + esc(reason) + '</span></p>' : '') +
-          '  <a href="' + pageUrl() + '" class="mt-6 inline-block text-accent font-semibold">Wróć do sklepu</a>' +
+          '  <h2 class="text-xl font-bold text-white">' + t('Zamówienie nie istnieje lub zostało anulowane przez administratora') + '</h2>' +
+          (reason ? '<p class="mt-3 text-sm text-slate-400 bg-red-400/10 border border-red-400/30 rounded-xl px-4 py-3">' + t('Powód anulowania: ') + '<span class="text-red-300 font-semibold">' + esc(t(reason)) + '</span></p>' : '') +
+          '  <a href="' + pageUrl() + '" class="mt-6 inline-block text-accent font-semibold">' + t('Wróć do sklepu') + '</a>' +
           '</div>';
         return;
       }
@@ -2459,7 +2617,7 @@
             ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>'
             : (i + 1)) +
           '  </div>' +
-          '  <p class="mt-2 text-xs font-semibold text-center leading-tight ' + (active ? 'text-accent' : 'text-slate-400') + '">' + s + '</p>' +
+          '  <p class="mt-2 text-xs font-semibold text-center leading-tight ' + (active ? 'text-accent' : 'text-slate-400') + '">' + t(s) + '</p>' +
           '</div>';
         stepsHtml += node;
         stepsHtml += (i < STATUSES.length - 1)
@@ -2475,14 +2633,14 @@
           '<div class="flex items-center gap-2 py-1">' +
           '  <span class="flex-1 text-slate-400">' + esc(it.productName) + ' <span class="text-slate-600">x' + it.qty + '</span></span>' +
           '  <span class="text-white text-xs">' + fmtTime((it.printTimeSec || 0) * it.qty) + '</span>' +
-          '  <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border ' + statusColor(st).split(' ')[0] + ' border-current/20">' + esc(st) + '</span>' +
+          '  <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border ' + statusColor(st).split(' ')[0] + ' border-current/20">' + esc(t(st)) + '</span>' +
           '</div>';
       });
 
       box.innerHTML =
         '<div class="max-w-lg mx-auto">' +
         '  <div class="text-center mb-6">' +
-        '    <h2 class="text-2xl font-bold text-white">Status zamówienia</h2>' +
+        '    <h2 class="text-2xl font-bold text-white">' + t('Status zamówienia') + '</h2>' +
         '    <p class="text-slate-400 mt-1">ID: ' + esc(shortId(orderId)) + '</p>' +
         '  </div>' +
         '  <div class="bg-panel border border-white/10 rounded-2xl p-5 mb-5">' +
@@ -2491,25 +2649,25 @@
         '        <p class="text-lg font-semibold text-white">' + esc(order.name) + '</p>' +
         '        <p class="text-sm text-slate-400">' + (order.className ? 'Klasa: ' + esc(order.className) : '') + '</p>' +
         '      </div>' +
-        '      <span class="text-sm font-bold ' + statusColor(order.status).split(' ')[0] + '">' + esc(order.status) + '</span>' +
+        '      <span class="text-sm font-bold ' + statusColor(order.status).split(' ')[0] + '">' + esc(t(order.status)) + '</span>' +
         '    </div>' +
-        '    <div class="flex items-center gap-1.5 text-[10px] text-slate-500 mt-1"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block"></span>Na żywo</div>' +
+        '    <div class="flex items-center gap-1.5 text-[10px] text-slate-500 mt-1"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block"></span>' + t('Na żywo') + '</div>' +
         (order.status === 'Drukuje się' && order.printer && PRINTERS[order.printer]
-          ? '<p class="mt-2 text-sm text-emerald-300">Drukuje na: <strong>' + esc(PRINTERS[order.printer].name) + '</strong></p>'
+          ? '<p class="mt-2 text-sm text-emerald-300">' + t('Drukuje na: ') + '<strong>' + esc(PRINTERS[order.printer].name) + '</strong></p>'
           : '') +
         '    <div class="mt-3 border-t border-white/10 pt-3 text-sm">' +
         itemsHtml +
-        '      <div class="flex justify-between py-1"><span class="text-slate-400">Dostawa</span><span class="text-white">' + esc(order.delivery || 'Szkoła') + '</span></div>' +
-        '      <div class="flex justify-between py-1"><span class="text-slate-400">Szacowany czas druku</span><span class="text-white">' + fmtTimeLong(order.estPrintSec) + '</span></div>' +
-        '      <div class="flex justify-between py-1"><span class="text-slate-400">Płatność</span><span class="text-white">' + esc(order.payment || 'Brak (przy odbiorze)') + '</span></div>' +
+        '      <div class="flex justify-between py-1"><span class="text-slate-400">' + t('Dostawa') + '</span><span class="text-white">' + esc(order.delivery || 'Szkoła') + '</span></div>' +
+        '      <div class="flex justify-between py-1"><span class="text-slate-400">' + t('Szacowany czas druku') + '</span><span class="text-white">' + fmtTimeLong(order.estPrintSec) + '</span></div>' +
+        '      <div class="flex justify-between py-1"><span class="text-slate-400">' + t('Płatność') + '</span><span class="text-white">' + esc(order.payment || t('Brak (przy odbiorze)')) + '</span></div>' +
         '    </div>' +
         '  </div>' +
         '  <div class="bg-panel border border-white/10 rounded-2xl p-5">' +
-        '    <p class="text-xs uppercase tracking-wide text-slate-500 mb-4">Postęp realizacji</p>' +
+        '    <p class="text-xs uppercase tracking-wide text-slate-500 mb-4">' + t('Postęp realizacji') + '</p>' +
         '    <div class="flex w-full items-center">' + stepsHtml + '</div>' +
         '  </div>' +
         '  <div class="text-center mt-6">' +
-        '    <a href="' + pageUrl() + '" class="inline-block text-accent font-semibold">Wróć do sklepu</a>' +
+        '    <a href="' + pageUrl() + '" class="inline-block text-accent font-semibold">' + t('Wróć do sklepu') + '</a>' +
         '  </div>' +
         '</div>';
 
@@ -2571,12 +2729,10 @@
     function renderAdminSettings() {
       document.getElementById('set-banner').value = settings.banner || '';
       document.getElementById('set-mode').value = settings.mode || '';
-      var sw = document.getElementById('set-whistle');
-      if (sw) sw.checked = settings.whistle !== false;
       var pscBox = document.getElementById('printer-status-controls');
       if (pscBox) {
         var cur = settings.printersStatus || {};
-        var opts = [['auto', 'Automatycznie'], ['unavailable', 'Niedostępna'], ['maintenance', 'W trakcie konserwacji'], ['closed', 'Laboratorium zamknięte']];
+        var opts = [['auto', 'Automatycznie'], ['unavailable', 'Niedostępna'], ['maintenance', 'W trakcie konserwacji'], ['closed', 'Po lekcjach']];
         pscBox.innerHTML = Object.keys(PRINTERS).filter(function (k) { return PRINTERS[k].enabled; }).map(function (k) {
           var v = cur[k] || 'auto';
           return '<div><label class="block text-xs text-slate-400 mb-1">' + esc(PRINTERS[k].name) + '</label>' +
@@ -2711,6 +2867,7 @@
           '<td class="py-3 px-3"><span class="font-semibold text-white">' + esc(p.name) + '</span>' +
           (p.listed === false ? ' <span class="text-[10px] uppercase tracking-wide text-slate-500 border border-white/10 rounded-full px-1.5 py-0.5 ml-1 align-middle">ukryta</span>' : '') +
           (p.variantOf ? ' <span class="text-[10px] uppercase tracking-wide text-slate-400 border border-white/10 rounded-full px-1.5 py-0.5 ml-1 align-middle">wariant</span>' : '') +
+          (!p.preview && !p.image ? ' <span class="text-[10px] uppercase tracking-wide text-amber-300 border border-amber-400/30 rounded-full px-1.5 py-0.5 ml-1 align-middle">brak miniaturki</span>' : '') +
           '</td>' +
           '<td class="py-3 px-3 text-sm text-slate-300">' +
           '  <span class="text-slate-400">M:</span> ' + fmtTime(p.printTimeSec) +
@@ -2860,7 +3017,8 @@
         '  <div class="min-w-0 flex-1">' +
         '    <p class="font-semibold text-white truncate">' + esc(p.name) +
         (p.listed === false ? ' <span class="text-[10px] uppercase tracking-wide text-slate-500">(ukryta)</span>' : '') +
-        (p.variantOf ? ' <span class="text-[10px] uppercase tracking-wide text-slate-400">(wariant)</span>' : '') + '</p>' +
+        (p.variantOf ? ' <span class="text-[10px] uppercase tracking-wide text-slate-400">(wariant)</span>' : '') +
+        (!p.preview && !p.image ? ' <span class="text-[10px] uppercase tracking-wide text-amber-300">(brak miniaturki)</span>' : '') + '</p>' +
         '    <p class="text-xs text-slate-400 mt-0.5">M: ' + fmtTime(p.printTimeSec) +
         (p.printTimeSecBambus ? ' · B: ' + fmtTime(p.printTimeSecBambus) : '') +
         (p.weight ? ' · ' + fmtGrams(p.weight) : '') + '</p>' +
@@ -3457,14 +3615,13 @@
       e.preventDefault();
       const banner = document.getElementById('set-banner').value.trim();
       const mode = document.getElementById('set-mode').value;
-      const whistle = !!document.getElementById('set-whistle')?.checked;
       const printersStatus = {};
       document.querySelectorAll('#printer-status-controls [data-printer-status]').forEach(function (sel) {
         printersStatus[sel.dataset.printerStatus] = sel.value;
       });
 
-      db.collection('settings').doc('main').set({ mode: mode, banner: banner, whistle: whistle, printersStatus: printersStatus, adminPasswordHash: settings.adminPasswordHash || '' })
-        .then(function () { settings.whistle = whistle; settings.printersStatus = printersStatus; flash('Ustawienia zapisane.'); })
+      db.collection('settings').doc('main').set({ mode: mode, banner: banner, printersStatus: printersStatus, adminPasswordHash: settings.adminPasswordHash || '' })
+        .then(function () { settings.mode = mode; settings.banner = banner; settings.printersStatus = printersStatus; flash('Ustawienia zapisane.'); })
         .catch(function (e) { alert('Błąd: ' + e.message); });
     }
 
@@ -3663,7 +3820,7 @@
       CANCEL_REASONS.forEach(function (r) {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.textContent = r;
+        btn.textContent = t(r);
         btn.className =
           'text-left w-full px-4 py-3 rounded-xl border border-white/10 hover:border-red-400/40 ' +
           'hover:bg-red-400/10 transition-all text-sm';
@@ -3712,7 +3869,7 @@
       const box = document.getElementById('compare-result');
       const ids = compareIds.filter(function (id) { return products[id]; });
       if (ids.length < 2) {
-        box.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">Dodaj co najmniej 2 oferty do porównania.</p>';
+        box.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">' + t('Dodaj co najmniej 2 oferty do porównania.') + '</p>';
         return;
       }
       var rows = [
@@ -3890,8 +4047,14 @@
           var id = btn.dataset.addCart;
           cart[id] = (cart[id] || 0) + 1;
           saveCart();
-          flash('Dodano do koszyka');
-          renderCartStep(); 
+          if (settings.mode === 'active' && products[id] && products[id].stock != null && cart[id] > products[id].stock) {
+            cart[id] = products[id].stock;
+            flash(t('Osiągnięto stan magazynowy (') + products[id].stock + ')');
+            saveCart();
+            return;
+          }
+          flash(t('Dodano do koszyka'));
+          renderCartStep();
           return;
         }
         btn = e.target.closest('[data-goto-product]');
@@ -3922,7 +4085,13 @@
         var btn;
         btn = e.target.closest('[data-cart-inc]');
         if (btn) {
-          cart[btn.dataset.cartInc] = (cart[btn.dataset.cartInc] || 0) + 1;
+          var incId = btn.dataset.cartInc;
+          var nextQty = (cart[incId] || 0) + 1;
+          if (settings.mode === 'active' && products[incId] && products[incId].stock != null && nextQty > products[incId].stock) {
+            flash(t('Osiągnięto stan magazynowy (') + products[incId].stock + ')');
+            return;
+          }
+          cart[incId] = nextQty;
           saveCart();
           renderCartStep();
           return;
@@ -4029,6 +4198,11 @@
       loadAssets().then(function () { renderPrinters(); }).catch(function (e) { console.error('assets:', e); });
       refreshPublicPrinterActivity();
       setInterval(refreshPublicPrinterActivity, 60000);
+      document.documentElement.lang = LANG;
+      applyStaticI18n();
+      updateLangToggle();
+      var ltBtn = document.getElementById('lang-toggle');
+      if (ltBtn) ltBtn.addEventListener('click', function () { setLang(LANG === 'pl' ? 'en' : 'pl'); });
 
 
       
@@ -4154,8 +4328,8 @@
 
     <main class="max-w-6xl mx-auto px-4 py-8">
       <section class="text-center mb-10">
-        <h2 class="text-3xl sm:text-4xl font-bold text-white">Zamów własny wydruk 3D</h2>
-        <p class="text-slate-400 mt-2 max-w-xl mx-auto">
+        <h2 data-i18n="Zamów własny wydruk 3D" class="text-3xl sm:text-4xl font-bold text-white">Zamów własny wydruk 3D</h2>
+        <p data-i18n="Wybierz oferty, a koszyk pokaże łączną wagę. Odbiór w szkole." class="text-slate-400 mt-2 max-w-xl mx-auto">
           Wybierz oferty, a koszyk pokaże łączną wagę. Odbiór w szkole.
         </p>
       </section>
@@ -4167,14 +4341,14 @@
 
       <section>
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-sm uppercase tracking-wide text-slate-500 font-semibold">Dostępne oferty</h3>
+          <h3 data-i18n="Dostępne oferty" class="text-sm uppercase tracking-wide text-slate-500 font-semibold">Dostępne oferty</h3>
         </div>
 
         <!-- PASEK NARZĘDZI (W3): wyszukiwarka, filtry, sortowanie -->
         <div class="bg-panel border border-white/10 rounded-2xl p-4 mb-6">
           <div class="flex flex-col lg:flex-row gap-3">
             <div class="flex-1">
-              <input id="shop-search" type="text" placeholder="Szukaj po nazwie..." value=""
+              <input id="shop-search" type="text" data-i18n-ph="Szukaj po nazwie..." placeholder="Szukaj po nazwie..." value=""
                 class="w-full bg-base border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-accent focus:outline-none" />
             </div>
             <div>
@@ -4195,11 +4369,11 @@
     <!-- MODAL: ŚLEDŹ PACZKĘ (wpisz 3-cyfrowy numer zamówienia) -->
     <div id="track-lookup-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <div class="bg-panel border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
-        <h3 class="text-lg font-bold text-white mb-1">Śledź paczkę</h3>
-        <p class="text-sm text-slate-400 mb-4">Wpisz 3-cyfrowy numer zamówienia otrzymany po złożeniu.</p>
+        <h3 data-i18n="Śledź paczkę" class="text-lg font-bold text-white mb-1">Śledź paczkę</h3>
+        <p data-i18n="Wpisz 3-cyfrowy numer zamówienia otrzymany po złożeniu." class="text-sm text-slate-400 mb-4">Wpisz 3-cyfrowy numer zamówienia otrzymany po złożeniu.</p>
         <form id="track-lookup-form" class="space-y-4">
           <div>
-            <label class="block text-sm text-slate-400 mb-1">Numer zamówienia</label>
+            <label data-i18n="Numer zamówienia" class="block text-sm text-slate-400 mb-1">Numer zamówienia</label>
             <input id="track-lookup-code" type="text" inputmode="numeric" pattern="\d{3}" maxlength="3" required
               placeholder="np. 294"
               class="w-full bg-base border border-white/10 rounded-xl px-4 py-2.5 text-white text-center text-2xl font-mono tracking-widest focus:border-accent focus:outline-none" />
@@ -4207,9 +4381,9 @@
           <p id="track-lookup-error" class="text-sm text-red-300"></p>
           <div class="flex gap-3">
             <button type="submit"
-              class="flex-1 py-2.5 rounded-xl font-semibold bg-accent text-slate-900 transition-all">Otwórz</button>
+              data-i18n="Otwórz" class="flex-1 py-2.5 rounded-xl font-semibold bg-accent text-slate-900 transition-all">Otwórz</button>
             <button type="button" id="track-lookup-close"
-              class="px-4 py-2.5 rounded-xl font-semibold bg-base border border-white/10 text-slate-300 hover:border-white/30 transition-all">Anuluj</button>
+              data-i18n="Anuluj" class="px-4 py-2.5 rounded-xl font-semibold bg-base border border-white/10 text-slate-300 hover:border-white/30 transition-all">Anuluj</button>
           </div>
         </form>
       </div>
@@ -4324,12 +4498,6 @@
               <div class="lg:col-span-3 flex items-end">
                 <button type="submit"
                   class="px-6 py-2.5 rounded-xl font-semibold bg-accent text-slate-900 transition-all">Zapisz ustawienia</button>
-              </div>
-              <div class="lg:col-span-3">
-                <label class="flex items-center gap-2 cursor-pointer">
-                  <input id="set-whistle" type="checkbox" class="accent-accent" />
-                  <span class="text-sm text-slate-400">Włącz gwizdek (przycisk „Odtwórz" na ofertach)</span>
-                </label>
               </div>
               <div class="lg:col-span-3 border-t border-white/10 pt-4">
                 <p class="text-sm font-semibold text-slate-300 mb-2">Status drukarek (informacyjny — widoczny na stronie głównej)</p>
@@ -4491,6 +4659,14 @@
                 <input id="anim-size-slider" type="range" min="1" max="100" step="5" value="100"
                   class="w-full accent-accent cursor-pointer"
                   oninput="window.__setAnimSize(this.value)" />
+                <label for="anim-fps-slider" class="block text-xs text-slate-500 mt-3 mb-1">Klatki/s animacji (<span id="anim-fps-value">20</span>)</label>
+                <input id="anim-fps-slider" type="range" min="8" max="30" step="1" value="20"
+                  class="w-full accent-accent cursor-pointer"
+                  oninput="window.__setAnimFps(this.value)" />
+                <label for="anim-playback-slider" class="block text-xs text-slate-500 mt-3 mb-1">Prędkość odtwarzania (<span id="anim-playback-value">100</span>%)</label>
+                <input id="anim-playback-slider" type="range" min="50" max="300" step="25" value="100"
+                  class="w-full accent-accent cursor-pointer"
+                  oninput="window.__setPlayback(this.value)" />
                 <div class="mt-3">
                   <button type="button" id="gen-preview-btn"
                     class="w-full py-2 rounded-xl text-xs font-semibold bg-accent/20 text-accent border border-accent/30 hover:bg-accent/30 transition-all">Generuj animację 360°</button>
@@ -4730,6 +4906,15 @@
       if (lbl) lbl.textContent = Math.round(animSizePct);
       try { localStorage.setItem('maslolab_anim_size', String(animSizePct)); } catch (e) {}
     };
+    let animFps = 20;
+    try { animFps = parseInt(localStorage.getItem('maslolab_anim_fps'), 10) || 20; } catch (e) {}
+    animFps = Math.min(30, Math.max(8, animFps));
+    window.__setAnimFps = function (val) {
+      animFps = Math.min(30, Math.max(8, parseInt(val, 10) || 20));
+      var lbl2 = document.getElementById('anim-fps-value');
+      if (lbl2) lbl2.textContent = String(animFps);
+      try { localStorage.setItem('maslolab_anim_fps', String(animFps)); } catch (e) {}
+    };
 
         
     window.__setModelColor = function (key, silent) {
@@ -4758,6 +4943,10 @@
       if (ss) ss.value = Math.round(animSizePct);
       var slbl = document.getElementById('anim-size-value');
       if (slbl) slbl.textContent = Math.round(animSizePct);
+      var fs = document.getElementById('anim-fps-slider');
+      if (fs) fs.value = String(animFps);
+      var flbl = document.getElementById('anim-fps-value');
+      if (flbl) flbl.textContent = String(animFps);
     })();
 
     
@@ -4845,8 +5034,8 @@
       cctx.fillRect(0, 0, W, H);
 
       
-      const fps = 20;
-      const frames = Math.max(8, Math.min(32, Math.round(fps * 1.2)));
+      const fps = Math.min(30, Math.max(8, animFps || 20));
+      const frames = Math.max(8, Math.min(36, Math.round(fps * 1.2)));
       const angleStep = (2 * Math.PI) / frames;
       const raw = new Uint8Array(W * H * 4);
       const encoder = new GifencEncoder();
@@ -4932,18 +5121,18 @@
 
   <!-- ============ PORÓWNYWARKA (pływający pasek) ============ -->
   <div id="compare-fab" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-40 bg-panel border border-white/10 rounded-2xl px-4 py-3 shadow-2xl flex items-center gap-3 flex-wrap justify-center">
-    <span class="text-xs text-slate-400 shrink-0">Porównanie (<span id="compare-count">0</span>/3):</span>
+    <span class="text-xs text-slate-400 shrink-0"><span id="cmp-label-text">Porównanie (</span><span id="compare-count">0</span>/3):</span>
     <span id="compare-items" class="flex flex-wrap gap-1.5 shrink-0"></span>
-    <button id="compare-open" class="shrink-0 px-3 py-1.5 rounded-lg bg-accent text-slate-900 font-semibold text-sm">Porównaj</button>
-    <button id="compare-clear" class="shrink-0 px-2 py-1.5 rounded-lg bg-base border border-white/10 text-slate-400 hover:text-red-300 text-sm">Wyczyść</button>
+    <button id="compare-open" data-i18n="Porównaj" class="shrink-0 px-3 py-1.5 rounded-lg bg-accent text-slate-900 font-semibold text-sm">Porównaj</button>
+    <button id="compare-clear" data-i18n="Wyczyść" class="shrink-0 px-2 py-1.5 rounded-lg bg-base border border-white/10 text-slate-400 hover:text-red-300 text-sm">Wyczyść</button>
   </div>
 
   <!-- ============ PORÓWNYWARKA (overlay wynik) ============ -->
   <div id="compare-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
     <div class="bg-panel border border-white/10 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
-      <h3 class="text-lg font-bold text-white mb-4">Porównanie ofert</h3>
+      <h3 data-i18n="Porównanie ofert" class="text-lg font-bold text-white mb-4">Porównanie ofert</h3>
       <div id="compare-result" class="overflow-x-auto"></div>
-      <button id="compare-close" class="mt-4 w-full py-2.5 rounded-xl font-semibold bg-base border border-white/10 text-slate-300 hover:border-white/30 transition-all">Zamknij</button>
+      <button id="compare-close" data-i18n="Zamknij" class="mt-4 w-full py-2.5 rounded-xl font-semibold bg-base border border-white/10 text-slate-300 hover:border-white/30 transition-all">Zamknij</button>
     </div>
   </div>
 
