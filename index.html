@@ -563,7 +563,24 @@
       } catch (e) { return ''; }
     }
     
+    var publicActivePrinters = {};
+    function refreshPublicPrinterActivity() {
+      db.collection('orders').where('isDeleted', '==', false)
+        .select('status', 'printer')
+        .get()
+        .then(function (snap) {
+          var act = {};
+          snap.forEach(function (d) {
+            var o = d.data();
+            if (o.status === 'Drukuje się' && o.printer) act[o.printer] = true;
+          });
+          publicActivePrinters = act;
+          scheduleRender();
+        }).catch(function () {});
+    }
+
     function activePrinters() {
+      if (!unsubOrders) return publicActivePrinters;
       var active = {};
       Object.values(orders).forEach(function (o) {
         if (!o || o.isDeleted) return;
@@ -933,15 +950,24 @@
 
 
     function genOrderCode() {
-      const used = {};
-      Object.values(orders).forEach(function (o) {
-        if (o && o.orderCode && !o.isDeleted) used[o.orderCode] = true;
-      });
-      let code = '';
-      do {
-        code = String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
-      } while (used[code]);
-      return code;
+      return db.collection('orders').where('isDeleted', '==', false)
+        .select('orderCode')
+        .get()
+        .then(function (snap) {
+          const used = {};
+          snap.forEach(function (d) {
+            const c = d.data().orderCode;
+            if (c) used[c] = true;
+          });
+          let code = '';
+          do {
+            code = String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
+          } while (used[code]);
+          return code;
+        })
+        .catch(function () {
+          return String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
+        });
     }
 
     
@@ -1165,20 +1191,22 @@
     }
 
     
-    function getQueuePosition(orderId) {
-      var myOrder = orders[orderId];
-      if (!myOrder) return { position: '?', total: '?', estimate: 'nieznany' };
-      var queued = Object.keys(orders)
-        .filter(function (id) {
-          var o = orders[id];
-          return o && !o.isDeleted && (o.status === 'W kolejce' || o.status === 'Drukuje się');
+    function fetchQueueInfo(orderId) {
+      return db.collection('orders').where('isDeleted', '==', false)
+        .select('status', 'createdAt')
+        .get()
+        .then(function (snap) {
+          var ids = [];
+          snap.forEach(function (d) {
+            var o = d.data();
+            if (o.status === 'W kolejce' || o.status === 'Drukuje się') ids.push({ id: d.id, ts: o.createdAt || 0 });
+          });
+          ids.sort(function (a, b) { return a.ts - b.ts; });
+          var pos = -1;
+          ids.forEach(function (x, i) { if (x.id === orderId) pos = i; });
+          return { position: pos === -1 ? '?' : String(pos + 1), total: String(ids.length) };
         })
-        .sort(function (a, b) {
-          return (orders[a].createdAt || 0) - (orders[b].createdAt || 0);
-        });
-      var position = queued.indexOf(orderId) + 1;
-      var total = queued.length;
-      return { position: position, total: total, estimate: myOrder.deliveryEstimate || 'nieznany' };
+        .catch(function () { return { position: '?', total: '?' }; });
     }
 
     
@@ -1330,8 +1358,10 @@
         if (!firstDataLoaded && settings !== undefined) firstDataLoaded = true;
         if (!(snap.metadata && snap.metadata.hasPendingWrites)) scheduleRender();
       }, function (err) { console.error('Products listener error:', err); });
+    }
 
-      
+    function startOrdersListener() {
+      if (unsubOrders) return;
       unsubOrders = db.collection('orders')
         .where('isDeleted', '==', false)
         .limit(500)
@@ -1344,9 +1374,13 @@
               delete orders[change.doc.id];
             }
           });
-          checkNewOrderAdmin(orders); 
+          checkNewOrderAdmin(orders);
           if (!(snap.metadata && snap.metadata.hasPendingWrites)) scheduleRender();
         }, function (err) { console.error('Orders listener error:', err); });
+    }
+
+    function stopOrdersListener() {
+      if (unsubOrders) { unsubOrders(); unsubOrders = null; }
     }
 
     function stopListeners() {
@@ -2119,7 +2153,6 @@
         return;
       }
       var o = lastOrderData;
-      var q = getQueuePosition(o.orderId);
       var link = trackingLink(o.orderCode);
       container.innerHTML =
         '<div class="text-center py-4">' +
@@ -2132,16 +2165,23 @@
         '  <p class="text-slate-400 mt-1">Dziękujemy, ' + esc(o.name) + '!</p>' +
         '  <div class="mt-6 space-y-3">' +
         '    <div class="bg-base/60 border border-white/10 rounded-xl p-4">' +
-        '      <p class="text-sm text-slate-400">Jesteś <span id="queue-pos" class="text-white font-bold text-lg inline-block">' + q.position + '.</span> w kolejce</p>' +
-        '      <p class="text-sm text-slate-400">(' + q.total + ' osób w kolejce)</p>' +
+        '      <p class="text-sm text-slate-400">Jesteś <span id="queue-pos" class="text-white font-bold text-lg inline-block">…</span> w kolejce</p>' +
+        '      <p class="text-sm text-slate-400">(<span id="q-total">…</span> osób w kolejce)</p>' +
         '    </div>' +
         '    <div class="bg-base/60 border border-white/10 rounded-xl p-4">' +
         '      <p class="text-xs text-slate-500 mb-1">Szacowany czas dostawy</p>' +
-        '      <p class="text-white font-medium">' + esc(q.estimate) + '</p>' +
+        '      <p class="text-white font-medium">' + esc(o.deliveryEstimate || 'nieznany') + '</p>' +
         '    </div>' +
         '  </div>' +
         '  <a href="' + esc(link) + '" class="mt-5 inline-block text-accent font-semibold">Śledź zamówienie &rarr;</a>' +
         '</div>';
+
+      fetchQueueInfo(o.orderId).then(function (qi) {
+        var pe = document.getElementById('queue-pos');
+        var pt = document.getElementById('q-total');
+        if (pe) pe.textContent = qi.position + '.';
+        if (pt) pt.textContent = qi.total;
+      });
 
       
       var posEl = document.getElementById('queue-pos');
@@ -2190,8 +2230,8 @@
       }
 
       var orderId = genUUID();
-      var orderCode = genOrderCode();
 
+      genOrderCode().then(function (orderCode) {
       var items = [];
       var totalWeight = 0, backlog = false;
       var expanded = expandBundles(Object.keys(cart).map(function (id) { return { productId: id, qty: cart[id] }; }));
@@ -2258,6 +2298,7 @@
           msg.innerHTML = '<p class="text-red-300 text-sm">Błąd zapisu: ' + esc(err.message) + '</p>';
           submitBtns.forEach(function (b) { b.disabled = false; });
         });
+      });
     }
 
     
@@ -2295,35 +2336,37 @@
     let trackingUnsub = null;
 
     
-    function resolveTrackingKey(key) {
-      if (key.indexOf('o:') === 0) {
-        const code = key.slice(2);
-        const id = Object.keys(orders).find(function (oid) {
-          const o = orders[oid];
-          return o && o.orderCode === code && !o.isDeleted;
-        });
-        return id || null;
-      }
-      return key.slice(3); 
+    function fetchOrderIdByKey(key) {
+      if (key.indexOf('id:') === 0) return Promise.resolve(key.slice(3));
+      const code = key.slice(2);
+      return db.collection('orders').where('orderCode', '==', code).limit(1).get()
+        .then(function (snap) {
+          var found = null;
+          snap.forEach(function (d) { if (!d.data().isDeleted) found = d.id; });
+          return found;
+        })
+        .catch(function () { return null; });
     }
 
     function initTracking(key) {
       trackingKey = key;
-      const orderId = resolveTrackingKey(key);
-      if (!orderId) {
-        
-        renderTracking(null, null, !ordersLoaded);
-        return;
-      }
-      if (trackingSubscribedId !== orderId) {
-        if (trackingUnsub) { trackingUnsub(); trackingUnsub = null; }
-        trackingSubscribedId = orderId;
-        trackingUnsub = db.collection('orders').doc(orderId).onSnapshot(function (snap) {
-          renderTracking(snap.exists ? snap.data() : null, orderId);
-        });
-      } else {
-        renderTracking(orders[orderId] || null, orderId);
-      }
+      renderTracking(null, null, true);
+      fetchOrderIdByKey(key).then(function (orderId) {
+        if (trackingKey !== key) return;
+        if (!orderId) {
+          renderTracking(null, null, false);
+          return;
+        }
+        if (trackingSubscribedId !== orderId) {
+          if (trackingUnsub) { trackingUnsub(); trackingUnsub = null; }
+          trackingSubscribedId = orderId;
+          trackingUnsub = db.collection('orders').doc(orderId).onSnapshot(function (snap) {
+            renderTracking(snap.exists ? snap.data() : null, orderId);
+          });
+        } else {
+          renderTracking(orders[orderId] || null, orderId);
+        }
+      });
     }
 
     function renderTracking(order, orderId, loading) {
@@ -3763,6 +3806,7 @@
           await db.collection('settings').doc('main').set({ adminPasswordHash: hash }, { merge: true });
           settings.adminPasswordHash = hash;
           sessionStorage.setItem(ADMIN_AUTH_KEY, '1');
+          startOrdersListener();
           flash('Hasło ustawione. Zalogowano.');
           route();
         } catch (ex) {
@@ -3779,6 +3823,7 @@
         const hash = await sha256(pass);
         if (hash === stored) {
           sessionStorage.setItem(ADMIN_AUTH_KEY, '1');
+          startOrdersListener();
           route();
         } else {
           err.textContent = 'Nieprawidłowe hasło.';
@@ -3793,6 +3838,7 @@
 
     
     function adminLogout() {
+      stopOrdersListener();
       try { sessionStorage.removeItem(ADMIN_AUTH_KEY); } catch (e) {  }
       navigate(homeUrl());
     }
@@ -3946,6 +3992,9 @@
       document.addEventListener('keydown', unlockOnce);
       loadCart();
       startListeners();
+      if (isAdminAuthed()) startOrdersListener();
+      refreshPublicPrinterActivity();
+      setInterval(refreshPublicPrinterActivity, 60000);
       setupEventDelegation();
       initAppNav(); 
       route();
