@@ -4257,7 +4257,7 @@
                   class="w-full accent-accent cursor-pointer"
                   oninput="window.__setAnimY(this.value)" />
                 <label for="anim-size-slider" class="block text-xs text-slate-500 mt-3 mb-1">Wielkość modelu w animacji (<span id="anim-size-value">100</span>%)</label>
-                <input id="anim-size-slider" type="range" min="1" max="200" step="5" value="100"
+                <input id="anim-size-slider" type="range" min="1" max="100" step="5" value="100"
                   class="w-full accent-accent cursor-pointer"
                   oninput="window.__setAnimSize(this.value)" />
                 <div class="mt-3">
@@ -4516,8 +4516,9 @@
     // Wielkość modelu w animacji (%) — mniejszy model = mniej kolorów = mniejszy plik GIF.
     let animSizePct = 100;
     try { animSizePct = parseFloat(localStorage.getItem('maslolab_anim_size')) || 100; } catch (e) {}
+    animSizePct = Math.min(100, Math.max(1, animSizePct)); // limit: model nigdy nie wychodzi poza kadr
     window.__setAnimSize = function (val) {
-      animSizePct = Math.max(1, Math.min(200, parseFloat(val) || 100));
+      animSizePct = Math.max(1, Math.min(100, parseFloat(val) || 100));
       var lbl = document.getElementById('anim-size-value');
       if (lbl) lbl.textContent = Math.round(animSizePct);
       try { localStorage.setItem('maslolab_anim_size', String(animSizePct)); } catch (e) {}
@@ -4766,20 +4767,34 @@
       const camera = new THREE.PerspectiveCamera(currentFov, 1, 0.1, 100);
       const vUp = new THREE.Vector3(0, 1, 0);
       const refTanHalf = Math.tan(deg2rad(REF_FOV) / 2);
-      const targetFill = 0.92;
-      const proj = (p, d) => {
-        const depth = Math.max(Math.abs(d - Math.abs(p.z)), 1e-6);
-        return Math.max(Math.abs(p.x) / depth, Math.abs(p.y) / depth);
-      };
+      const targetFill = 0.90;
+      const elevation = 0.35; // lekko z góry dla lepszego odbioru
+      // Dopasowanie dystansu dla NAJGORSZEGO kąta orbity: dla każdej próby
+      // prawdziwe osie widoku (dir/right/upB) — ta sama metoda co w miniaturce.
+      // Stare uproszczenie (|p.z|) zaniżało dystans przy niektórych kątach i model wychodził poza kadr.
+      const ORBIT_SAMPLES = 24;
       let dist = 1;
-      for (let it = 0; it < 8; it++) {
-        let maxNdc = 1e-6;
-        corners.forEach((p) => { maxNdc = Math.max(maxNdc, proj(p, dist)); });
-        if (maxNdc <= 0) break;
-        dist *= maxNdc / (targetFill * refTanHalf);
+      for (let s = 0; s < ORBIT_SAMPLES; s++) {
+        const ang = deg2rad(animYDeg) + (s / ORBIT_SAMPLES) * 2 * Math.PI;
+        const dirS = new THREE.Vector3(Math.sin(ang), elevation, Math.cos(ang)).normalize();
+        const rightS = new THREE.Vector3().crossVectors(dirS, vUp).normalize();
+        const upBS = new THREE.Vector3().crossVectors(rightS, dirS).normalize();
+        const projS = (p, d) => {
+          const depth = Math.max(d - dirS.dot(p), 1e-6);
+          return Math.max(Math.abs(rightS.dot(p)) / depth, Math.abs(upBS.dot(p)) / depth);
+        };
+        let dS = dist; // start od dotychczasowego maksimum (szybsza zbieżność)
+        for (let it = 0; it < 8; it++) {
+          let maxNdc = 1e-6;
+          corners.forEach((p) => { maxNdc = Math.max(maxNdc, projS(p, dS)); });
+          if (maxNdc <= 0) break;
+          dS *= maxNdc / (targetFill * refTanHalf);
+        }
+        if (dS > dist) dist = dS;
       }
-      // FOV jako niezależny zoom (jak w miniaturce); wielkość modelu reguluje suwak animacji.
-      const renderDist = (dist / (animSizePct / 100)) * (Math.tan(deg2rad(REF_FOV) / 2) / Math.tan(deg2rad(currentFov) / 2));
+      // FOV jako niezależny zoom (jak w miniaturce); suwak wielkości tylko pomniejsza (limit 100%).
+      const sizeK = Math.min(Math.max(animSizePct, 1), 100) / 100;
+      const renderDist = (dist / sizeK) * (refTanHalf / Math.tan(deg2rad(currentFov) / 2));
       camera.near = renderDist / 1000;
       camera.far = renderDist * 1000;
       camera.updateProjectionMatrix();
@@ -4797,7 +4812,6 @@
       const fps = 20;
       const frames = Math.max(8, Math.min(32, Math.round(fps * 1.2)));
       const angleStep = (2 * Math.PI) / frames;
-      const elevation = 0.35; // lekko z góry dla lepszego odbioru
       const raw = new Uint8Array(W * H * 4);
       const encoder = new GifencEncoder();
       let globalPalette = null;
