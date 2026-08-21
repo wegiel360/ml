@@ -595,7 +595,7 @@
     const LAST_ORDER_KEY = 'maslolab_last_order';
 
     
-    let settings = { mode: 'queue', banner: '', adminPasswordHash: '', whistle: true }; 
+    let settings = { mode: 'queue', banner: '', adminPasswordHash: '', whistle: true, printersStatus: {} };
     let firstDataLoaded = false; 
     let ordersLoaded = false; 
     let products = {}; 
@@ -660,6 +660,12 @@
     const PRINTERS = {
       makerbot: { name: 'Makerbot Sketch', imgKey: 'printer-makerbot', enabled: true },
       bambus: { name: 'Bambus', imgKey: 'printer-bambus', enabled: true }
+    };
+
+    const PRINTER_STATUS_META = {
+      unavailable: { label: 'Niedostępna', cls: 'text-slate-400 bg-slate-500/10 border-white/10', dot: '#94a3b8' },
+      maintenance: { label: 'W trakcie konserwacji', cls: 'text-orange-300 bg-orange-400/10 border-orange-400/30 animate-pulse', dot: '#fb923c' },
+      closed: { label: 'Laboratorium zamknięte', cls: 'text-violet-300 bg-violet-400/10 border-violet-400/30', dot: '#a78bfa' }
     };
 
     
@@ -1446,19 +1452,25 @@
       const wrap = document.getElementById('printer-section');
       if (!wrap) return;
       const active = activePrinters();
+      const effActive = {};
       const enabled = Object.keys(PRINTERS).filter(function (k) { return PRINTERS[k].enabled; });
       if (enabled.length === 0) { wrap.classList.add('hidden'); return; }
       wrap.classList.remove('hidden');
       wrap.innerHTML = enabled.map(function (key) {
         const pr = PRINTERS[key];
-        const isActive = !!active[key];
+        const manualSt = (settings.printersStatus || {})[key];
+        const meta = manualSt && PRINTER_STATUS_META[manualSt] ? PRINTER_STATUS_META[manualSt] : null;
+        const isActive = !meta && !!active[key];
+        if (isActive) effActive[key] = true;
         return '<div class="flex flex-col items-center gap-3 py-2">' +
-          
-          '<div class="px-4 py-1.5 rounded-full border text-sm font-semibold shrink-0 ' +
-          (isActive
-            ? 'text-emerald-300 bg-emerald-400/10 border-emerald-400/30 animate-pulse'
-            : 'text-slate-300 bg-slate-500/5 border-white/10') + '">' +
-          esc(pr.name) + (isActive ? ' · Drukowanie…' : ' · Wolna') +
+
+          '<div class="px-4 py-1.5 rounded-full border text-sm font-semibold shrink-0 inline-flex items-center gap-2 ' +
+          (meta ? meta.cls
+            : (isActive
+              ? 'text-emerald-300 bg-emerald-400/10 border-emerald-400/30 animate-pulse'
+              : 'text-slate-300 bg-slate-500/5 border-white/10')) + '">' +
+          '<span class="w-2 h-2 rounded-full inline-block" style="background:' + (meta ? meta.dot : (isActive ? '#6ee7b7' : '#64748b')) + '"></span>' +
+          esc(pr.name) + ' · ' + (meta ? meta.label : (isActive ? 'Drukowanie…' : 'Wolna')) +
           '</div>' +
           '<div data-printer-img="' + key + '" class="w-40 h-40 flex items-center justify-center">' +
           '  <img class="max-h-full max-w-full object-contain drop-shadow-lg" alt="' + esc(pr.name) + '" loading="lazy" decoding="async" />' +
@@ -1471,7 +1483,7 @@
         const url = assetsImg(PRINTERS[key].imgKey);
         if (url) holder.firstElementChild.src = url;
       });
-      scheduleShake(active);
+      scheduleShake(effActive);
     }
 
     
@@ -2467,6 +2479,18 @@
       document.getElementById('set-mode').value = settings.mode || '';
       var sw = document.getElementById('set-whistle');
       if (sw) sw.checked = settings.whistle !== false;
+      var pscBox = document.getElementById('printer-status-controls');
+      if (pscBox) {
+        var cur = settings.printersStatus || {};
+        var opts = [['auto', 'Automatycznie'], ['unavailable', 'Niedostępna'], ['maintenance', 'W trakcie konserwacji'], ['closed', 'Laboratorium zamknięte']];
+        pscBox.innerHTML = Object.keys(PRINTERS).filter(function (k) { return PRINTERS[k].enabled; }).map(function (k) {
+          var v = cur[k] || 'auto';
+          return '<div><label class="block text-xs text-slate-400 mb-1">' + esc(PRINTERS[k].name) + '</label>' +
+            '<select data-printer-status="' + k + '" class="w-full bg-base border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-accent focus:outline-none">' +
+            opts.map(function (o) { return '<option value="' + o[0] + '"' + (v === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
+            '</select></div>';
+        }).join('');
+      }
     }
 
     
@@ -3282,9 +3306,13 @@
       const banner = document.getElementById('set-banner').value.trim();
       const mode = document.getElementById('set-mode').value;
       const whistle = !!document.getElementById('set-whistle')?.checked;
+      const printersStatus = {};
+      document.querySelectorAll('#printer-status-controls [data-printer-status]').forEach(function (sel) {
+        printersStatus[sel.dataset.printerStatus] = sel.value;
+      });
 
-      db.collection('settings').doc('main').set({ mode: mode, banner: banner, whistle: whistle, adminPasswordHash: settings.adminPasswordHash || '' })
-        .then(function () { settings.whistle = whistle; flash('Ustawienia zapisane.'); })
+      db.collection('settings').doc('main').set({ mode: mode, banner: banner, whistle: whistle, printersStatus: printersStatus, adminPasswordHash: settings.adminPasswordHash || '' })
+        .then(function () { settings.whistle = whistle; settings.printersStatus = printersStatus; flash('Ustawienia zapisane.'); })
         .catch(function (e) { alert('Błąd: ' + e.message); });
     }
 
@@ -4150,6 +4178,10 @@
                   <input id="set-whistle" type="checkbox" class="accent-accent" />
                   <span class="text-sm text-slate-400">Włącz gwizdek (przycisk „Odtwórz" na ofertach)</span>
                 </label>
+              </div>
+              <div class="lg:col-span-3 border-t border-white/10 pt-4">
+                <p class="text-sm font-semibold text-slate-300 mb-2">Status drukarek (informacyjny — widoczny na stronie głównej)</p>
+                <div id="printer-status-controls" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
               </div>
             </form>
           </div>
