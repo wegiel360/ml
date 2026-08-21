@@ -4579,22 +4579,27 @@
 
       <!-- TABELA ZAMÓWIEŃ + KOLEJKA DRUKU -->
       <section id="adm-orders" class="admin-sec hidden">
-        <div class="bg-panel border border-white/10 rounded-2xl p-6 mb-6">
-          <h3 class="text-lg font-bold text-white mb-4">Kolejka druku</h3>
-          <div id="admin-queue" class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start"></div>
-        </div>
         <div class="bg-panel border border-white/10 rounded-2xl p-6 mb-10">
-          <h3 class="text-lg font-bold text-white mb-4">Zamówienia</h3>
-          <div class="flex flex-wrap gap-2 mb-4">
-            <select id="orders-filter" class="bg-base border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-accent focus:outline-none">
-              <option value="all">Wszystkie</option>
-              <option value="active">Aktywne</option>
-              <option value="archived">Archiwum</option>
-            </select>
-            <select id="orders-printer-filter" class="bg-base border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-accent focus:outline-none">
-              <option value="">Wszystkie drukarki</option>
-            </select>
+          <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
+            <h3 class="text-lg font-bold text-white">Kolejka i zamówienia</h3>
+            <div class="flex flex-wrap gap-2">
+              <select id="orders-filter" class="bg-base border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-accent focus:outline-none">
+                <option value="all">Wszystkie</option>
+                <option value="active">Aktywne</option>
+                <option value="archived">Archiwum</option>
+              </select>
+              <select id="orders-printer-filter" class="bg-base border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-accent focus:outline-none">
+                <option value="">Wszystkie drukarki</option>
+              </select>
+            </div>
           </div>
+
+          <p class="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-3">Kolejka druku</p>
+          <div id="admin-queue" class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start"></div>
+
+          <div class="border-t border-white/10 my-6"></div>
+
+          <p class="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-4">Wszystkie zamówienia</p>
           <div class="overflow-x-auto hidden md:block">
           <table class="w-full text-left text-sm border-collapse min-w-[1020px]">
             <thead>
