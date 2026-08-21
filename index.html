@@ -1533,6 +1533,8 @@
       }
 
       var galleryImages = [];
+      var cardImg = imageSrcFor(p.imageUrl || p.image);
+      if ((!p.preview || galleryImages.length === 0) && cardImg && cardImg.length > 20) galleryImages.push(cardImg);
       Array.prototype.concat.apply([], [p.photos || []]).forEach(function (ph) {
         var s = imageSrcFor(ph);
         if (s && s.length > 20) galleryImages.push(s);
@@ -1601,7 +1603,7 @@
           : (p.stock != null ? '      <span class="text-emerald-300 bg-emerald-400/10 border border-emerald-400/30 rounded-full px-3 py-1 text-sm">Stan: ' + p.stock + '</span>' : '')) +
         '    </div>' +
         (isWhistle ? '<button id="pd-whistle" class="whistle-btn mt-4 px-4 py-2 rounded-xl text-sm w-fit">Odtwórz (' + whistleLabel + ')</button>' : '') +
-        (p.modelFile && p.modelFile.data ? '<button id="pd-download" data-download-model="' + productId + '" class="mt-2 px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-400 text-sm border border-emerald-500/30 hover:bg-emerald-500/30 transition w-fit inline-block text-center">Pobierz plik 3D (' + esc(p.modelFile.name) + ')</button>' : '') +
+        (p.downloadEnabled !== false && p.modelFile && p.modelFile.data ? '<button id="pd-download" data-download-model="' + productId + '" class="mt-2 px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-400 text-sm border border-emerald-500/30 hover:bg-emerald-500/30 transition w-fit inline-block text-center">Pobierz plik 3D (' + esc(p.modelFile.name) + ')</button>' : '') +
         (p.authorLink ? '<a href="' + esc(p.authorLink) + '" target="_blank" rel="noopener" class="mt-2 px-4 py-2 rounded-xl bg-violet-500/20 text-violet-400 text-sm border border-violet-500/30 hover:bg-violet-500/30 transition w-fit inline-block text-center">Model autora &nearr;</a>' : '') +
         '    <div class="mt-6 pt-6 border-t border-white/10">' +
         (outOfStock
@@ -1766,6 +1768,12 @@
           '<img data-preview="' + esc(id) + '" data-src="" alt="' + esc(p.name) + '" class="w-full h-full object-contain" loading="lazy" decoding="async" />' +
           '</div>';
       }
+      var img = imageSrcFor(p.imageUrl || p.image);
+      if (img && img.length > 20) {
+        return '<div class="aspect-square w-full overflow-hidden bg-black/40">' +
+          '  <img data-src="' + esc(img) + '" alt="' + esc(p.name) + '" class="w-full h-full object-contain" loading="lazy" decoding="async" />' +
+          '</div>';
+      }
       return '<div class="aspect-square w-full flex items-center justify-center bg-gradient-to-br from-panel to-base text-slate-600">' +
         '  <svg class="w-16 h-16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">' +
         '    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />' +
@@ -1854,10 +1862,11 @@
         '<div class="px-3 py-2">';
       ids.slice(0, 3).forEach(function (id) {
         var p = products[id];
+        var imgSrc = imageSrcFor(p.imageUrl || p.image);
         html +=
           '<div class="flex gap-3 items-center py-1.5">' +
           '<span class="w-10 h-10 rounded-lg overflow-hidden bg-white/5 shrink-0 grid place-items-center border border-white/10">' +
-          '<span class="text-xs text-slate-500">' + esc(p.name.charAt(0)) + '</span>' +
+          (imgSrc ? '<img src="' + esc(imgSrc) + '" alt="" class="w-full h-full object-cover">' : '<span class="text-xs text-slate-500">' + esc(p.name.charAt(0)) + '</span>') +
           '</span>' +
           '<div class="min-w-0 flex-1">' +
           '<div class="text-sm font-medium text-slate-100 truncate">' + esc(p.name) + '</div>' +
@@ -1972,7 +1981,9 @@
         var qty = cart[id];
         html += '<div class="flex items-center gap-3 py-3 border-b border-white/5">' +
           '<div class="w-10 h-10 rounded-lg overflow-hidden bg-black/40 shrink-0">' +
-          '<div class="w-full h-full flex items-center justify-center text-slate-600 text-xs">Brak</div>' +
+          ((p.imageUrl || p.image) && (p.imageUrl || p.image).length > 20
+            ? '<img src="' + esc(imageSrcFor(p.imageUrl || p.image)) + '" class="w-full h-full object-cover" alt="" />'
+            : '<div class="w-full h-full flex items-center justify-center text-slate-600 text-xs">Brak</div>') +
           '</div>' +
           '<div class="flex-1 min-w-0">' +
           '  <p class="font-medium text-white text-sm truncate">' + esc(p.name) + '</p>' +
@@ -2641,7 +2652,9 @@
         tr.className = 'border-b border-white/5 hover:bg-white/[0.02]';
         tr.innerHTML =
           '<td class="py-3 px-3 w-16"><div class="w-12 h-12 rounded-lg overflow-hidden bg-black/40">' +
-          '<div class="w-full h-full flex items-center justify-center text-slate-600 text-xs">Brak</div>' +
+          ((p.imageUrl || p.image) && (p.imageUrl || p.image).length > 20
+            ? '<img src="' + esc(imageSrcFor(p.imageUrl || p.image)) + '" class="w-full h-full object-cover" alt="" />'
+            : '<div class="w-full h-full flex items-center justify-center text-slate-600 text-xs">Brak</div>') +
           '</div></td>' +
           '<td class="py-3 px-3"><span class="font-semibold text-white">' + esc(p.name) + '</span>' +
           (p.listed === false ? ' <span class="text-[10px] uppercase tracking-wide text-slate-500 border border-white/10 rounded-full px-1.5 py-0.5 ml-1 align-middle">ukryta</span>' : '') +
@@ -2786,7 +2799,9 @@
     function productCard(id, p) {
       const card = document.createElement('div');
       card.className = 'bg-panel border border-white/10 rounded-2xl p-4';
-      const imgHtml = '<div class="w-full h-full flex items-center justify-center text-slate-600 text-xs">Brak</div>';
+      const imgHtml = ((p.imageUrl || p.image) && (p.imageUrl || p.image).length > 20)
+        ? '<img src="' + esc(imageSrcFor(p.imageUrl || p.image)) + '" class="w-full h-full object-cover" alt="" />'
+        : '<div class="w-full h-full flex items-center justify-center text-slate-600 text-xs">Brak</div>';
       card.innerHTML =
         '<div class="flex gap-3">' +
         '  <div class="w-14 h-14 rounded-lg overflow-hidden bg-black/40 shrink-0">' + imgHtml + '</div>' +
@@ -2914,6 +2929,69 @@
       });
     }
 
+    // Kompresja obrazu karty: max 300px, WebP (fallback JPEG), dataURL
+    function compressCardImage(file) {
+      return new Promise(function (resolve, reject) {
+        var url = URL.createObjectURL(file);
+        var img = new Image();
+        img.onload = function () {
+          try {
+            var MAX = 300;
+            var scale = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
+            var w = Math.max(1, Math.round(img.naturalWidth * scale));
+            var h = Math.max(1, Math.round(img.naturalHeight * scale));
+            var cv = document.createElement('canvas');
+            cv.width = w; cv.height = h;
+            cv.getContext('2d').drawImage(img, 0, 0, w, h);
+            URL.revokeObjectURL(url);
+            var out = cv.toDataURL('image/webp', 0.85);
+            var fmt = 'webp';
+            if (!out || out.indexOf('data:image/webp') !== 0) { out = cv.toDataURL('image/jpeg', 0.85); fmt = 'jpeg'; }
+            resolve({ dataUrl: out, format: fmt });
+          } catch (er) {
+            URL.revokeObjectURL(url); reject(er);
+          }
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('Nie można odczytać obrazu.')); };
+        img.src = url;
+      });
+    }
+
+    let cardImageRemoved = false;
+    function handleCardImageSelect(e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      var note = document.getElementById('product-image-note');
+      if (file.type && file.type.indexOf('image/') !== 0) { alert('Wybierz plik graficzny.'); e.target.value = ''; return; }
+      if (note) note.textContent = 'Kompresja...';
+      compressCardImage(file).then(function (res) {
+        var binary = dataUrlToBinaryBytes(res.dataUrl);
+        var b122 = base122_encode(binary);
+        document.getElementById('product-image-data').value = b122;
+        cardImageRemoved = false;
+        var th = document.getElementById('product-image-thumb');
+        if (th) { th.src = res.dataUrl; th.classList.remove('hidden'); }
+        var kb = (b122.length * 8 / 7) / 1024;
+        if (note) note.textContent = 'Gotowe: ' + res.format.toUpperCase() + ' ~' + kb.toFixed(1) + ' KB (Base122).';
+        var rm = document.getElementById('product-image-remove');
+        if (rm) rm.classList.remove('hidden');
+        e.target.value = '';
+      }).catch(function () {
+        if (note) note.textContent = 'Nie udało się przetworzyć obrazu.';
+        e.target.value = '';
+      });
+    }
+    function handleCardImageRemove() {
+      document.getElementById('product-image-data').value = '';
+      cardImageRemoved = true;
+      var th = document.getElementById('product-image-thumb');
+      if (th) { th.classList.add('hidden'); th.src = ''; }
+      var note = document.getElementById('product-image-note');
+      if (note) note.textContent = 'Obraz zostanie usunięty po zapisie.';
+      var rm = document.getElementById('product-image-remove');
+      if (rm) rm.classList.add('hidden');
+    }
+
     
     let bundleItems = []; 
 
@@ -3010,7 +3088,25 @@
       document.getElementById('product-manual-time-bambus-h').value = Math.floor((p.manualTimeSecBambus || 0) / 3600) || '';
       document.getElementById('product-manual-time-bambus-m').value = Math.floor(((p.manualTimeSecBambus || 0) % 3600) / 60) || '';
       document.getElementById('product-stock').value = p.stock || 0;
-      document.getElementById('product-listed').checked = p.listed !== false;
+      document.getElementById('product-visibility').value = (p.listed === false) ? 'niepubliczny' : 'publiczny';
+      document.getElementById('product-download-enabled').checked = p.downloadEnabled !== false;
+      cardImageRemoved = false;
+      var cImgData = document.getElementById('product-image-data');
+      if (cImgData) cImgData.value = '';
+      var cThumb = document.getElementById('product-image-thumb');
+      var cNote = document.getElementById('product-image-note');
+      var cRm = document.getElementById('product-image-remove');
+      var storedCardImg = imageSrcFor(p.image);
+      if (cThumb && storedCardImg && storedCardImg.length > 20) {
+        cThumb.src = storedCardImg;
+        cThumb.classList.remove('hidden');
+        if (cNote) cNote.textContent = 'Obecny obraz karty.';
+        if (cRm) cRm.classList.remove('hidden');
+      } else {
+        if (cThumb) { cThumb.classList.add('hidden'); cThumb.src = ''; }
+        if (cNote) cNote.textContent = '';
+        if (cRm) cRm.classList.add('hidden');
+      }
       var isVariant = !!p.variantOf;
       var vTgl = document.getElementById('product-variant-toggle');
       var vSec = document.getElementById('variant-section');
@@ -3138,7 +3234,9 @@
         const printTimeSecBambus = readHm('product-print-time-bambus-h', 'product-print-time-bambus-m'); 
         const manualTimeSecBambus = readHm('product-manual-time-bambus-h', 'product-manual-time-bambus-m'); 
         const stock = parseInt(document.getElementById('product-stock').value, 10) || 0;
-        const listed = !!document.getElementById('product-listed').checked;
+        const listed = document.getElementById('product-visibility').value !== 'niepubliczny';
+        const downloadEnabled = !!document.getElementById('product-download-enabled').checked;
+        const cardImageData = document.getElementById('product-image-data').value;
         const productColor = document.getElementById('product-color').value || 'czekolada';
         const whistleRaw = document.getElementById('product-whistle-freq').value.trim();
         const whistleFreq = whistleRaw ? whistleRaw.split(',').map(function (v) { return parseFloat(v.trim()); }).filter(function (v) { return !isNaN(v) && v > 0; }) : [];
@@ -3157,8 +3255,9 @@
 
         if (!name) { alert('Podaj nazwę produktu.'); return; }
         if (!editingProductId && !modelInput.files[0]) { alert('Dodaj plik 3D (STL) — jest wymagany.'); return; }
-        if (!editingProductId && !previewB122) { alert('Wygeneruj animację 360° przed zapisem — jest wymagana.'); return; }
-        if (editingProductId && newFile && !previewB122) { alert('Nowy plik modelu unieważnił dotychczasową animację 360° — wygeneruj nową przed zapisem.'); return; }
+        const hasStoredMedia = !!editingProductId && !!(products[editingProductId] && (products[editingProductId].preview || products[editingProductId].image));
+        if (!editingProductId && !previewB122 && !cardImageData) { alert('Dodaj miniaturkę: wygeneruj animację 360° albo wgraj obraz.'); return; }
+        if (editingProductId && newFile && !hasStoredMedia && !previewB122 && !cardImageData) { alert('Nowy plik modelu unieważnił dotychczasową miniaturkę — wygeneruj animację albo wgraj obraz.'); return; }
         
         if (newFile && editingProductId && products[editingProductId] && products[editingProductId].preview) {
           if (!confirm('Wczytano nowy plik modelu — dotychczasowa animacja 360° jest nieaktualna i zostanie usunięta (możesz wygenerować nową). Kontynuować?')) return;
@@ -3168,7 +3267,7 @@
           name: name, desc: desc, weight: weight,
           printTimeSec: printTimeSec, manualTimeSec: manualTimeSec,
           printTimeSecBambus: printTimeSecBambus, manualTimeSecBambus: manualTimeSecBambus,
-          stock: stock, listed: listed,
+          stock: stock, listed: listed, downloadEnabled: downloadEnabled,
           whistleFreq: whistleFreq, whistleEnabled: whistleEnabled,
           bundle: bundle, authorLink: authorLink, color: productColor, photos: photos,
           variantOf: variantOf
@@ -3254,7 +3353,11 @@
           }
         }
 
+        if (cardImageData) docData.image = cardImageData;
         if (editingProductId) {
+          if (cardImageRemoved && !cardImageData && products[editingProductId] && products[editingProductId].image) {
+            docData.image = firebase.firestore.FieldValue.delete();
+          }
           await db.collection('products').doc(id).update(docData);
           flash('Produkt zaktualizowany.');
         } else {
@@ -3287,8 +3390,10 @@
       if (window.__setModelColor) window.__setModelColor('czekolada', true);
       var weCb = document.getElementById('product-whistle-enabled');
       if (weCb) weCb.checked = true;
-      var plCb = document.getElementById('product-listed');
-      if (plCb) plCb.checked = true;
+      var plSel = document.getElementById('product-visibility');
+      if (plSel) plSel.value = 'publiczny';
+      var pdCb = document.getElementById('product-download-enabled');
+      if (pdCb) pdCb.checked = true;
       var vtR = document.getElementById('product-variant-toggle');
       if (vtR) vtR.checked = false;
       var vsR = document.getElementById('variant-section');
@@ -3565,7 +3670,10 @@
       }
       var rows = [
         { label: 'Obraz', val: function (p, id) {
-          return '<div class="w-full aspect-square flex items-center justify-center text-slate-600 text-xs bg-black/40 rounded-lg">Brak</div>';
+          var img = imageSrcFor(p.imageUrl || p.image);
+          return img && img.length > 20
+            ? '<img data-src="' + esc(img) + '" alt="" class="w-full aspect-square object-contain rounded-lg bg-black/40" loading="lazy" />'
+            : '<div class="w-full aspect-square flex items-center justify-center text-slate-600 text-xs bg-black/40 rounded-lg">Brak</div>';
         } },
         { label: 'Nazwa', val: function (p) { return '<span class="font-semibold text-white">' + esc(p.name) + '</span>'; } },
         { label: 'Czas druku', val: function (p) { return fmtTimeLong(p.printTimeSec); } },
@@ -3948,6 +4056,8 @@
       });
       document.getElementById('product-model').addEventListener('change', handleModelSelect);
       document.getElementById('product-photos').addEventListener('change', handlePhotosSelect);
+      document.getElementById('product-image-file').addEventListener('change', handleCardImageSelect);
+      document.getElementById('product-image-remove').addEventListener('click', handleCardImageRemove);
       document.getElementById('product-photos-preview').addEventListener('click', function (e) {
         var del = e.target.closest('[data-photo-del]');
         if (del) {
@@ -4232,11 +4342,17 @@
               </div>
             </div>
             <div>
+              <label class="block text-sm text-slate-400 mb-1">Widoczność</label>
+              <select id="product-visibility" class="w-full bg-base border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-accent focus:outline-none">
+                <option value="publiczny">Publiczny — widoczna w sklepie</option>
+                <option value="niepubliczny">Niepubliczny — tylko bezpośredni link</option>
+              </select>
+            </div>
+            <div>
               <label class="flex items-center gap-2 cursor-pointer">
-                <input id="product-listed" type="checkbox" checked class="accent-accent" />
-                <span class="text-sm text-slate-400">Pokaż w sklepie</span>
+                <input id="product-download-enabled" type="checkbox" checked class="accent-accent" />
+                <span class="text-sm text-slate-400">Pozwól pobierać plik 3D (przycisk na stronie oferty)</span>
               </label>
-              <p class="text-xs text-slate-500 mt-1">Odznaczone = oferta dostępna tylko z bezpośredniego linku.</p>
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
@@ -4352,6 +4468,15 @@
                     class="color-swatch rounded-full w-8 h-8 border border-white/20 ring-accent" style="background:#9aa0a6"></button>
                 </div>
               </div>
+            </div>
+            <div>
+              <label class="block text-sm text-slate-400 mb-1">Obraz zamiast animacji (opcjonalnie — użyty gdy brak GIF-a)</label>
+              <input id="product-image-file" type="file" accept="image/*"
+                class="w-full text-sm text-slate-400 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-base file:text-accent file:font-semibold file:cursor-pointer" />
+              <input id="product-image-data" type="hidden" value="" />
+              <img id="product-image-thumb" alt="Podgląd obrazu" class="hidden mt-2 max-h-32 rounded-lg object-cover border border-white/10" />
+              <p id="product-image-note" class="text-xs text-slate-500 mt-1"></p>
+              <button id="product-image-remove" type="button" class="hidden mt-1 text-xs text-red-400 hover:text-red-300">Usuń obraz</button>
             </div>
             <div>
               <label class="block text-sm text-slate-400 mb-1">Plik 3D (STL, <span class="text-accent">wymagany</span> — z niego powstaje miniaturka)</label>
