@@ -1536,7 +1536,29 @@
         whistleLabel = freqs.map(function (f) { return f >= 1000 ? (f / 1000).toFixed(1) + 'kHz' : f + 'Hz'; }).join(' + ');
       }
 
-      var html =
+      // Warianty: cala grupa (produkt bazowy + jego warianty), aktywny podswietlony
+      var groupKey = p.variantOf || productId;
+      var siblings = Object.keys(products).filter(function (sid) {
+        var sp = products[sid];
+        return sp && !sp.isDeleted && ((sp.variantOf || sid) === groupKey);
+      }).sort(function (x, y) {
+        return (products[x].createdAt || 0) - (products[y].createdAt || 0);
+      });
+      var chipsHtml = '';
+      if (siblings.length > 1) {
+        chipsHtml = '<div class="flex flex-wrap items-center gap-2 mb-6">' +
+          '<span class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Warianty:</span>' +
+          siblings.map(function (sid) {
+            var sp = products[sid];
+            var act = sid === productId;
+            var label = sp.name.length > 24 ? sp.name.slice(0, 23) + '…' : sp.name;
+            return '<button type="button" data-goto-slug="' + esc(slugify(sp.name)) + '" class="px-3 py-1.5 rounded-full text-sm font-semibold border transition-all ' +
+              (act ? 'bg-accent text-slate-900 border-accent' : 'bg-white/5 text-slate-300 border-white/10 hover:border-accent') +
+              '">' + esc(label) + '</button>';
+          }).join('') + '</div>';
+      }
+
+      var html = chipsHtml +
         '<div class="grid grid-cols-1 md:grid-cols-2 gap-8">' +
         '  <div id="pd-gallery-wrap" class="relative aspect-square w-full max-h-[70vh] rounded-2xl overflow-hidden bg-black/40 shadow-xl select-none" style="touch-action:pan-y">' +
         (p.preview
@@ -1578,6 +1600,13 @@
         '</div>';
 
       box.innerHTML = html;
+
+      // Chipy wariantow -> nawigacja SPA po slugach
+      box.querySelectorAll('[data-goto-slug]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          navigate(basePath() + b.dataset.gotoSlug);
+        });
+      });
 
       
       var pdPrevImg = box.querySelector('[data-preview-detail]');
@@ -2592,6 +2621,7 @@
           '</div></td>' +
           '<td class="py-3 px-3"><span class="font-semibold text-white">' + esc(p.name) + '</span>' +
           (p.listed === false ? ' <span class="text-[10px] uppercase tracking-wide text-slate-500 border border-white/10 rounded-full px-1.5 py-0.5 ml-1 align-middle">ukryta</span>' : '') +
+          (p.variantOf ? ' <span class="text-[10px] uppercase tracking-wide text-slate-400 border border-white/10 rounded-full px-1.5 py-0.5 ml-1 align-middle">wariant</span>' : '') +
           '</td>' +
           '<td class="py-3 px-3 text-sm text-slate-300">' +
           '  <span class="text-slate-400">M:</span> ' + fmtTime(p.printTimeSec) +
@@ -2707,6 +2737,25 @@
       }
 
       populateBundleDropdown();
+      populateVariantParentDropdown();
+    }
+
+    // Dropdown rodzica wariantu: tylko produkty bazowe (bez wlasnego variantOf), bez edytowanego
+    function populateVariantParentDropdown() {
+      var sel = document.getElementById('variant-parent');
+      if (!sel) return;
+      var cur = sel.value;
+      sel.innerHTML = '<option value="">— wybierz produkt bazowy —</option>';
+      Object.keys(products).forEach(function (id) {
+        if (id === editingProductId) return;
+        var p = products[id];
+        if (!p || p.isDeleted || p.variantOf) return;
+        var opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = esc(p.name);
+        sel.appendChild(opt);
+      });
+      if (cur && sel.querySelector('option[value="' + cur + '"]')) sel.value = cur;
     }
 
     
@@ -2719,7 +2768,8 @@
         '  <div class="w-14 h-14 rounded-lg overflow-hidden bg-black/40 shrink-0">' + imgHtml + '</div>' +
         '  <div class="min-w-0 flex-1">' +
         '    <p class="font-semibold text-white truncate">' + esc(p.name) +
-        (p.listed === false ? ' <span class="text-[10px] uppercase tracking-wide text-slate-500">(ukryta)</span>' : '') + '</p>' +
+        (p.listed === false ? ' <span class="text-[10px] uppercase tracking-wide text-slate-500">(ukryta)</span>' : '') +
+        (p.variantOf ? ' <span class="text-[10px] uppercase tracking-wide text-slate-400">(wariant)</span>' : '') + '</p>' +
         '    <p class="text-xs text-slate-400 mt-0.5">M: ' + fmtTime(p.printTimeSec) +
         (p.printTimeSecBambus ? ' · B: ' + fmtTime(p.printTimeSecBambus) : '') +
         (p.weight ? ' · ' + fmtGrams(p.weight) : '') + '</p>' +
@@ -2937,6 +2987,13 @@
       document.getElementById('product-manual-time-bambus-m').value = Math.floor(((p.manualTimeSecBambus || 0) % 3600) / 60) || '';
       document.getElementById('product-stock').value = p.stock || 0;
       document.getElementById('product-listed').checked = p.listed !== false;
+      var isVariant = !!p.variantOf;
+      var vTgl = document.getElementById('product-variant-toggle');
+      var vSec = document.getElementById('variant-section');
+      var vPar = document.getElementById('variant-parent');
+      if (vTgl) vTgl.checked = isVariant;
+      if (vSec) vSec.classList.toggle('hidden', !isVariant);
+      if (vPar && isVariant) vPar.value = p.variantOf;
       document.getElementById('product-whistle-freq').value = Array.isArray(p.whistleFreq) ? p.whistleFreq.join(', ') : (p.whistleFreq || '');
       document.getElementById('product-whistle-enabled').checked = p.whistleEnabled !== false;
       var savedColor = p.color || 'czekolada';
@@ -3072,6 +3129,7 @@
         const authorLink = document.getElementById('product-author-link').value.trim() || '';
         const photos = productPhotos.slice();
         const previewB122 = document.getElementById('product-preview-data').value;
+        const variantOf = document.getElementById('product-variant-toggle').checked ? (document.getElementById('variant-parent').value || '') : '';
 
         if (!name) { alert('Podaj nazwę produktu.'); return; }
         if (!editingProductId && !modelInput.files[0]) { alert('Dodaj plik 3D (STL) — jest wymagany.'); return; }
@@ -3088,7 +3146,8 @@
           printTimeSecBambus: printTimeSecBambus, manualTimeSecBambus: manualTimeSecBambus,
           stock: stock, listed: listed,
           whistleFreq: whistleFreq, whistleEnabled: whistleEnabled,
-          bundle: bundle, authorLink: authorLink, color: productColor, photos: photos
+          bundle: bundle, authorLink: authorLink, color: productColor, photos: photos,
+          variantOf: variantOf
         };
 
         const id = editingProductId || genUUID();
@@ -3206,6 +3265,10 @@
       if (weCb) weCb.checked = true;
       var plCb = document.getElementById('product-listed');
       if (plCb) plCb.checked = true;
+      var vtR = document.getElementById('product-variant-toggle');
+      if (vtR) vtR.checked = false;
+      var vsR = document.getElementById('variant-section');
+      if (vsR) vsR.classList.add('hidden');
       productPhotos = [];
       renderPhotoPreviews();
       resetBundleUI();
@@ -3836,6 +3899,25 @@
         resetProductForm();
         document.getElementById('product-name').focus();
       });
+      var vSel = document.getElementById('variant-parent');
+      if (vSel) vSel.addEventListener('change', function () {
+        var pp = products[this.value];
+        if (!pp) return;
+        document.getElementById('product-desc').value = pp.desc || '';
+        document.getElementById('product-weight').value = pp.weight || '';
+        document.getElementById('product-print-time-h').value = Math.floor((pp.printTimeSec || 0) / 3600) || '';
+        document.getElementById('product-print-time-m').value = Math.floor(((pp.printTimeSec || 0) % 3600) / 60) || '';
+        document.getElementById('product-manual-time-h').value = Math.floor((pp.manualTimeSec || 0) / 3600) || '';
+        document.getElementById('product-manual-time-m').value = Math.floor(((pp.manualTimeSec || 0) % 3600) / 60) || '';
+        document.getElementById('product-print-time-bambus-h').value = Math.floor((pp.printTimeSecBambus || 0) / 3600) || '';
+        document.getElementById('product-print-time-bambus-m').value = Math.floor(((pp.printTimeSecBambus || 0) % 3600) / 60) || '';
+        document.getElementById('product-manual-time-bambus-h').value = Math.floor((pp.manualTimeSecBambus || 0) / 3600) || '';
+        document.getElementById('product-manual-time-bambus-m').value = Math.floor(((pp.manualTimeSecBambus || 0) % 3600) / 60) || '';
+        document.getElementById('product-whistle-freq').value = Array.isArray(pp.whistleFreq) ? pp.whistleFreq.join(', ') : (pp.whistleFreq || '');
+        document.getElementById('product-whistle-enabled').checked = pp.whistleEnabled !== false;
+        document.getElementById('product-author-link').value = pp.authorLink || '';
+        if (window.__setModelColor) window.__setModelColor(pp.color || 'czekolada', true);
+      });
       document.getElementById('product-model').addEventListener('change', handleModelSelect);
       document.getElementById('product-photos').addEventListener('change', handlePhotosSelect);
       document.getElementById('product-photos-preview').addEventListener('click', function (e) {
@@ -4089,6 +4171,21 @@
               <label class="block text-sm text-slate-400 mb-1">Opis</label>
               <textarea id="product-desc" rows="2" placeholder="Krótki opis wydruku"
                 class="w-full bg-base border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-accent focus:outline-none"></textarea>
+            </div>
+            <div>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input id="product-variant-toggle" type="checkbox" class="accent-accent"
+                  onchange="document.getElementById('variant-section').classList.toggle('hidden',!this.checked)" />
+                <span class="text-sm text-slate-400">To wariant innego produktu</span>
+              </label>
+              <div id="variant-section" class="hidden mt-2">
+                <p class="text-sm text-slate-400 mb-1">Produkt bazowy</p>
+                <select id="variant-parent"
+                  class="w-full bg-base border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:border-accent focus:outline-none">
+                  <option value="">— wybierz produkt bazowy —</option>
+                </select>
+                <p class="text-xs text-slate-500 mt-1">Podciąga dane techniczne z produktu bazowego. Wariant ma własny plik STL, animację, kolor i stan. Na stronie produktu pojawi się przełącznik wariantów.</p>
+              </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
