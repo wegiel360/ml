@@ -565,18 +565,32 @@
     
     var publicActivePrinters = {};
     function refreshPublicPrinterActivity() {
-      db.collection('orders').where('isDeleted', '==', false)
-        .select('status', 'printer')
-        .get()
-        .then(function (snap) {
-          var act = {};
-          snap.forEach(function (d) {
-            var o = d.data();
-            if (o.status === 'Drukuje się' && o.printer) act[o.printer] = true;
-          });
-          publicActivePrinters = act;
-          scheduleRender();
-        }).catch(function () {});
+      try {
+        db.collection('orders').select('status', 'printer').where('isDeleted', '==', false)
+          .get()
+          .then(function (snap) {
+            publicActivePrinters = extractActivePrinters(snap);
+            scheduleRender();
+          }).catch(function () { fallbackPublicPrinterActivity(); });
+      } catch (e) { fallbackPublicPrinterActivity(); }
+    }
+    function fallbackPublicPrinterActivity() {
+      try {
+        db.collection('orders').where('isDeleted', '==', false)
+          .get()
+          .then(function (snap) {
+            publicActivePrinters = extractActivePrinters(snap);
+            scheduleRender();
+          }).catch(function () {});
+      } catch (e) {}
+    }
+    function extractActivePrinters(snap) {
+      var act = {};
+      snap.forEach(function (d) {
+        var o = d.data();
+        if (o.status === 'Drukuje się' && o.printer) act[o.printer] = true;
+      });
+      return act;
     }
 
     function activePrinters() {
@@ -950,24 +964,26 @@
 
 
     function genOrderCode() {
-      return db.collection('orders').where('isDeleted', '==', false)
-        .select('orderCode')
-        .get()
-        .then(function (snap) {
-          const used = {};
-          snap.forEach(function (d) {
-            const c = d.data().orderCode;
-            if (c) used[c] = true;
-          });
-          let code = '';
-          do {
-            code = String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
-          } while (used[code]);
-          return code;
-        })
-        .catch(function () {
-          return String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
-        });
+      try {
+        return db.collection('orders').select('orderCode').where('isDeleted', '==', false)
+          .get()
+          .then(function (snap) {
+            const used = {};
+            snap.forEach(function (d) {
+              const c = d.data().orderCode;
+              if (c) used[c] = true;
+            });
+            return drawFreeCode(used);
+          })
+          .catch(function () { return drawFreeCode({}); });
+      } catch (e) { return Promise.resolve(drawFreeCode({})); }
+    }
+    function drawFreeCode(used) {
+      let code = '';
+      do {
+        code = String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
+      } while (used[code]);
+      return code;
     }
 
     
@@ -1192,21 +1208,31 @@
 
     
     function fetchQueueInfo(orderId) {
-      return db.collection('orders').where('isDeleted', '==', false)
-        .select('status', 'createdAt')
-        .get()
-        .then(function (snap) {
-          var ids = [];
-          snap.forEach(function (d) {
-            var o = d.data();
-            if (o.status === 'W kolejce' || o.status === 'Drukuje się') ids.push({ id: d.id, ts: o.createdAt || 0 });
-          });
-          ids.sort(function (a, b) { return a.ts - b.ts; });
-          var pos = -1;
-          ids.forEach(function (x, i) { if (x.id === orderId) pos = i; });
-          return { position: pos === -1 ? '?' : String(pos + 1), total: String(ids.length) };
-        })
-        .catch(function () { return { position: '?', total: '?' }; });
+      try {
+        return db.collection('orders').select('status', 'createdAt').where('isDeleted', '==', false)
+          .get()
+          .then(function (snap) { return parseQueueInfo(snap, orderId); })
+          .catch(function () { return fallbackQueueInfo(orderId); });
+      } catch (e) { return fallbackQueueInfo(orderId); }
+    }
+    function fallbackQueueInfo(orderId) {
+      try {
+        return db.collection('orders').where('isDeleted', '==', false)
+          .get()
+          .then(function (snap) { return parseQueueInfo(snap, orderId); })
+          .catch(function () { return { position: '?', total: '?' }; });
+      } catch (e) { return Promise.resolve({ position: '?', total: '?' }); }
+    }
+    function parseQueueInfo(snap, orderId) {
+      var ids = [];
+      snap.forEach(function (d) {
+        var o = d.data();
+        if (o.status === 'W kolejce' || o.status === 'Drukuje się') ids.push({ id: d.id, ts: o.createdAt || 0 });
+      });
+      ids.sort(function (a, b) { return a.ts - b.ts; });
+      var pos = -1;
+      ids.forEach(function (x, i) { if (x.id === orderId) pos = i; });
+      return { position: pos === -1 ? '?' : String(pos + 1), total: String(ids.length) };
     }
 
     
@@ -3993,8 +4019,6 @@
       loadCart();
       startListeners();
       if (isAdminAuthed()) startOrdersListener();
-      refreshPublicPrinterActivity();
-      setInterval(refreshPublicPrinterActivity, 60000);
       setupEventDelegation();
       initAppNav(); 
       route();
@@ -4003,6 +4027,9 @@
       updateCartCount();
       
       loadAssets().then(function () { renderPrinters(); }).catch(function (e) { console.error('assets:', e); });
+      refreshPublicPrinterActivity();
+      setInterval(refreshPublicPrinterActivity, 60000);
+
 
       
       document.getElementById('track-lookup-close').addEventListener('click', closeTrackLookup);
