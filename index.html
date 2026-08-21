@@ -1277,9 +1277,7 @@
       renderShop();
       if (isViewOpen('view-admin')) {
         if (adminTab === 'products') renderAdminProducts();
-        else if (adminTab === 'orders') { renderAdminOrders(); populateOrdersPrinterFilter(); }
-        else if (adminTab === 'queue') renderPrintQueue();
-        else if (adminTab === 'stock') renderBulkStock();
+        else if (adminTab === 'orders') { renderPrintQueue(); renderAdminOrders(); populateOrdersPrinterFilter(); }
         else if (adminTab === 'settings') renderAdminSettings();
       }
       var params = new URLSearchParams(window.location.search);
@@ -2453,7 +2451,6 @@
        renderAdminProducts();
        renderAdminOrders();
        renderPrintQueue();
-       renderBulkStock();
        initBundleUI();
        bindAdminNav();
      }
@@ -2472,12 +2469,10 @@
          btn.classList.toggle('text-slate-300', !active);
          btn.classList.toggle('bg-white/5', !active);
        });
-       if (tab === 'products') renderAdminProducts();
-       else if (tab === 'orders') { renderAdminOrders(); populateOrdersPrinterFilter(); }
-       else if (tab === 'queue') renderPrintQueue();
-       else if (tab === 'stock') renderBulkStock();
-       else if (tab === 'settings') renderAdminSettings();
-     }
+        if (tab === 'products') renderAdminProducts();
+        else if (tab === 'orders') { renderPrintQueue(); renderAdminOrders(); populateOrdersPrinterFilter(); }
+        else if (tab === 'settings') renderAdminSettings();
+      }
      function bindAdminNav() {
        document.querySelectorAll('#view-admin [data-admin-tab]').forEach(function (btn) {
          btn.addEventListener('click', function () { setAdminTab(btn.dataset.adminTab); });
@@ -2505,38 +2500,7 @@
     }
 
     
-    function renderBulkStock() {
-      var list = document.getElementById('bulk-stock-list');
-      if (!list) return;
-      var keys = Object.keys(products);
-      if (keys.length === 0) { list.innerHTML = '<p class="text-slate-500 text-sm col-span-full">Brak opublikowanych produktów.</p>'; return; }
-      list.innerHTML = keys.map(function (id) {
-        var p = products[id];
-        return '<div class="bg-base/50 border border-white/10 rounded-xl p-3">' +
-          '<p class="text-sm font-semibold text-white truncate">' + esc(p.name) + '</p>' +
-          '<div class="flex items-center gap-2 mt-2">' +
-          '  <label class="text-xs text-slate-400 shrink-0">Stan</label>' +
-          '  <input type="number" min="0" value="' + (p.stock || 0) + '" data-bulk-stock="' + id + '" class="w-24 bg-panel border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:border-accent focus:outline-none" />' +
-          '  <span class="text-xs text-slate-500">szt.</span>' +
-          '</div></div>';
-      }).join('');
-    }
-    function saveBulkStock() {
-      var inputs = document.querySelectorAll('#bulk-stock-list [data-bulk-stock]');
-      var batch = db.batch();
-      var any = false;
-      inputs.forEach(function (inp) {
-        var id = inp.dataset.bulkStock;
-        var val = parseInt(inp.value, 10);
-        if (isNaN(val) || val < 0) { alert('Nieprawidłowy stan dla: ' + esc(products[id] ? products[id].name : id)); return; }
-        batch.update(db.collection('products').doc(id), { stock: val });
-        any = true;
-      });
-      if (!any) return;
-      batch.commit().then(function () { flash('Stany magazynowe zaktualizowane.'); }).catch(function (e) { alert('Błąd: ' + e.message); });
-    }
-
-    
+        
     
     function itemStatus(o, it) {
       if (it && it.status) return it.status;
@@ -3154,6 +3118,7 @@
       }
       document.getElementById('admin-form-title').textContent = 'Edytuj produkt';
       document.getElementById('admin-form-reset').textContent = 'Anuluj edycję';
+      document.getElementById('admin-form').classList.remove('hidden');
       document.getElementById('admin-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -3374,7 +3339,7 @@
       }
     }
 
-    function resetProductForm() {
+    function resetProductForm(hideForm) {
       editingProductId = null;
       document.getElementById('admin-product-form').reset();
       var rotc3 = document.getElementById('rot-controls');
@@ -3403,6 +3368,8 @@
       resetBundleUI();
       document.getElementById('admin-form-title').textContent = 'Dodaj nowy produkt';
       document.getElementById('admin-form-reset').textContent = 'Wyczyść';
+      var afHide = document.getElementById('admin-form');
+      if (afHide && hideForm !== false) afHide.classList.add('hidden');
     }
 
     
@@ -4032,7 +3999,8 @@
       document.getElementById('admin-product-form').addEventListener('submit', handleProductSubmit);
       var pAdd = document.getElementById('admin-product-add');
       if (pAdd) pAdd.addEventListener('click', function () {
-        resetProductForm();
+        resetProductForm(false);
+        document.getElementById('admin-form').classList.remove('hidden');
         document.getElementById('product-name').focus();
       });
       var vSel = document.getElementById('variant-parent');
@@ -4067,11 +4035,6 @@
       });
       document.getElementById('admin-logout').addEventListener('click', adminLogout);
 
-      
-      var bulkSave = document.getElementById('bulk-stock-save');
-      if (bulkSave) bulkSave.addEventListener('click', saveBulkStock);
-
-      
       var of = document.getElementById('orders-filter');
       if (of) of.addEventListener('change', function () { renderAdminOrders(); });
       var opf = document.getElementById('orders-printer-filter');
@@ -4243,14 +4206,6 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
             Zamówienia
           </button>
-          <button type="button" class="admin-tab flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all" data-admin-tab="queue">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l-2 3h12l-2-3m-8 0V6a4 4 0 018 0v3m-4 6v3" /></svg>
-            Kolejka
-          </button>
-          <button type="button" class="admin-tab flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all" data-admin-tab="stock">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-            Stany
-          </button>
           <button type="button" class="admin-tab flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all" data-admin-tab="settings">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.34 3.98l.9-1.4a1 1 0 011.71 0l.9 1.4m-3.51 0a10 10 0 015.65 0m-5.65 0L3 12m0 0a9 9 0 1018 0H3zm11.66-8.02l3.51 5.53m-3.51-5.53l-.9 1.4m-5.65 0L3 12" /></svg>
             Ustawienia
@@ -4301,7 +4256,7 @@
       <section id="adm-products" class="admin-sec">
       <div class="space-y-8">
         <!-- Formularz dodawania/edycji -->
-        <div id="admin-form" class="bg-panel border border-white/10 rounded-2xl p-6">
+        <div id="admin-form" class="bg-panel border border-white/10 rounded-2xl p-6 hidden">
           <h3 id="admin-form-title" class="text-lg font-bold text-white mb-4">Dodaj nowy produkt</h3>
           <form id="admin-product-form" class="space-y-4">
             <div>
@@ -4535,27 +4490,12 @@
       </div>
       </section>
 
-      <!-- STANY (ZBIORCZA EDYCJA W9) -->
-      <section id="adm-stock" class="admin-sec hidden">
-        <div class="bg-panel border border-white/10 rounded-2xl p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold text-white">Zbiorcza edycja stanów</h3>
-            <button id="bulk-stock-save" class="px-4 py-2 rounded-xl font-semibold bg-accent text-slate-900 text-sm transition-all">Zapisz wszystkie</button>
-          </div>
-          <div id="bulk-stock-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
-        </div>
-      </section>
-
-      <!-- KOLEJKA DRUKU -->
-      <section id="adm-queue" class="admin-sec hidden">
-        <div class="bg-panel border border-white/10 rounded-2xl p-6">
+      <!-- TABELA ZAMÓWIEŃ + KOLEJKA DRUKU -->
+      <section id="adm-orders" class="admin-sec hidden">
+        <div class="bg-panel border border-white/10 rounded-2xl p-6 mb-6">
           <h3 class="text-lg font-bold text-white mb-4">Kolejka druku</h3>
           <div id="admin-queue" class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start"></div>
         </div>
-      </section>
-
-      <!-- TABELA ZAMÓWIEŃ -->
-      <section id="adm-orders" class="admin-sec hidden">
         <div class="bg-panel border border-white/10 rounded-2xl p-6 mb-10">
           <h3 class="text-lg font-bold text-white mb-4">Zamówienia</h3>
           <div class="flex flex-wrap gap-2 mb-4">
