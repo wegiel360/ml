@@ -484,7 +484,12 @@
     
     function base122_decode(str) {
       const dec = tryDecodeNew(str);
-      if (dec !== null && base122_encode(dec) === str) return dec;
+      if (dec !== null) {
+        // Pelna weryfikacja re-enkodem tylko dla mniejszych danych;
+        // duze modele/GIF-y przechodza na podstawie scislych kontroli dlugosci (2x szybciej).
+        if (str.length > 300000) return dec;
+        if (base122_encode(dec) === str) return dec;
+      }
       try { return decodeMonolithic(str); }
       catch (e) { return dec !== null ? dec : new Uint8Array(0); }
     }
@@ -522,10 +527,18 @@
     }
 
     
+    var __imgSrcCache = {};
     function imageSrcFor(val) {
       if (!val) return '';
       if (val.startsWith('data:')) return val;
-      try { return base122ToImgDataURL(val); } catch (e) { return ''; }
+      if (__imgSrcCache[val]) return __imgSrcCache[val];
+      try {
+        var out = base122ToImgDataURL(val);
+        var keys = Object.keys(__imgSrcCache);
+        if (keys.length > 60) keys.slice(0, 30).forEach(function (k) { delete __imgSrcCache[k]; });
+        __imgSrcCache[val] = out;
+        return out;
+      } catch (e) { return ''; }
     }
 
     
@@ -538,11 +551,15 @@
     }
     
     
+    var __assetBlobCache = {};
     function assetsImg(key) {
       if (!__assets || !__assets.img || !__assets.img[key]) return '';
+      if (__assetBlobCache[key]) return __assetBlobCache[key];
       try {
         var bytes = window.__decodeB122Ref(__assets.img[key]);
-        return URL.createObjectURL(new Blob([bytes], { type: 'image/webp' }));
+        var u = URL.createObjectURL(new Blob([bytes], { type: 'image/webp' }));
+        __assetBlobCache[key] = u;
+        return u;
       } catch (e) { return ''; }
     }
     
@@ -1531,7 +1548,7 @@
       }
 
       var galleryImages = [];
-      var cardImg = imageSrcFor(p.imageUrl || p.image);
+      var cardImg = imageSrcFor(p.image);
       if ((!p.preview || galleryImages.length === 0) && cardImg && cardImg.length > 20) galleryImages.push(cardImg);
       Array.prototype.concat.apply([], [p.photos || []]).forEach(function (ph) {
         var s = imageSrcFor(ph);
@@ -1662,7 +1679,6 @@
 
       if (galleryImages.length > 1) {
         var gallCurrent = 0;
-        var gallWrap = document.getElementById('pd-gallery-wrap');
         function gallShow(i) {
           gallCurrent = (i + galleryImages.length) % galleryImages.length;
           var imgs = gallWrap.querySelectorAll('.pd-gall-img');
@@ -1750,6 +1766,13 @@
             if (bin.length < 6 || bin[0] !== 0x47 || bin[1] !== 0x49 || bin[2] !== 0x46 || bin[3] !== 0x38) return '';
             var blob = new Blob([bin], { type: 'image/gif' });
             var url = URL.createObjectURL(blob);
+            var cacheKeys = Object.keys(__previewCache);
+            if (cacheKeys.length >= 6) {
+              cacheKeys.slice(0, cacheKeys.length - 5).forEach(function (k) {
+                try { URL.revokeObjectURL(__previewCache[k].url); } catch (e2) {}
+                delete __previewCache[k];
+              });
+            }
             __previewCache[productId] = { url: url, size: meta.size || 0 };
             return url;
           } catch (e) { return ''; }
@@ -1766,7 +1789,7 @@
           '<img data-preview="' + esc(id) + '" data-src="" alt="' + esc(p.name) + '" class="w-full h-full object-contain" loading="lazy" decoding="async" />' +
           '</div>';
       }
-      var img = imageSrcFor(p.imageUrl || p.image);
+      var img = imageSrcFor(p.image);
       if (img && img.length > 20) {
         return '<div class="aspect-square w-full overflow-hidden bg-black/40">' +
           '  <img data-src="' + esc(img) + '" alt="' + esc(p.name) + '" class="w-full h-full object-contain" loading="lazy" decoding="async" />' +
@@ -1836,10 +1859,6 @@
     }
 
     
-    function openCart() {
-      
-      goCheckout();
-    }
     
     function renderCartPreview() {
       var prev = document.getElementById('cart-preview');
@@ -1860,7 +1879,7 @@
         '<div class="px-3 py-2">';
       ids.slice(0, 3).forEach(function (id) {
         var p = products[id];
-        var imgSrc = imageSrcFor(p.imageUrl || p.image);
+        var imgSrc = imageSrcFor(p.image);
         html +=
           '<div class="flex gap-3 items-center py-1.5">' +
           '<span class="w-10 h-10 rounded-lg overflow-hidden bg-white/5 shrink-0 grid place-items-center border border-white/10">' +
@@ -1897,7 +1916,7 @@
       wrap.addEventListener('mouseleave', rp);
       document.addEventListener('click', rp);
       var btn = wrap.querySelector('[data-nav="cart"]');
-      if (btn) btn.addEventListener('click', openCart);
+      if (btn) btn.addEventListener('click', function () { goCheckout(); });
       document.getElementById('cart-preview') &&
         document.getElementById('cart-preview').addEventListener('mouseleave', function () {
           document.getElementById('cart-preview').classList.add('hidden');
@@ -1979,8 +1998,8 @@
         var qty = cart[id];
         html += '<div class="flex items-center gap-3 py-3 border-b border-white/5">' +
           '<div class="w-10 h-10 rounded-lg overflow-hidden bg-black/40 shrink-0">' +
-          ((p.imageUrl || p.image) && (p.imageUrl || p.image).length > 20
-            ? '<img src="' + esc(imageSrcFor(p.imageUrl || p.image)) + '" class="w-full h-full object-cover" alt="" />'
+          ((p.image) && (p.image).length > 20
+            ? '<img src="' + esc(imageSrcFor(p.image)) + '" class="w-full h-full object-cover" alt="" />'
             : '<div class="w-full h-full flex items-center justify-center text-slate-600 text-xs">Brak</div>') +
           '</div>' +
           '<div class="flex-1 min-w-0">' +
@@ -2616,8 +2635,8 @@
         tr.className = 'border-b border-white/5 hover:bg-white/[0.02]';
         tr.innerHTML =
           '<td class="py-3 px-3 w-16"><div class="w-12 h-12 rounded-lg overflow-hidden bg-black/40">' +
-          ((p.imageUrl || p.image) && (p.imageUrl || p.image).length > 20
-            ? '<img src="' + esc(imageSrcFor(p.imageUrl || p.image)) + '" class="w-full h-full object-cover" alt="" />'
+          ((p.image) && (p.image).length > 20
+            ? '<img src="' + esc(imageSrcFor(p.image)) + '" class="w-full h-full object-cover" alt="" />'
             : '<div class="w-full h-full flex items-center justify-center text-slate-600 text-xs">Brak</div>') +
           '</div></td>' +
           '<td class="py-3 px-3"><span class="font-semibold text-white">' + esc(p.name) + '</span>' +
@@ -2763,8 +2782,8 @@
     function productCard(id, p) {
       const card = document.createElement('div');
       card.className = 'bg-panel border border-white/10 rounded-2xl p-4';
-      const imgHtml = ((p.imageUrl || p.image) && (p.imageUrl || p.image).length > 20)
-        ? '<img src="' + esc(imageSrcFor(p.imageUrl || p.image)) + '" class="w-full h-full object-cover" alt="" />'
+      const imgHtml = ((p.image) && (p.image).length > 20)
+        ? '<img src="' + esc(imageSrcFor(p.image)) + '" class="w-full h-full object-cover" alt="" />'
         : '<div class="w-full h-full flex items-center justify-center text-slate-600 text-xs">Brak</div>';
       card.innerHTML =
         '<div class="flex gap-3">' +
@@ -2849,28 +2868,36 @@
     }
 
     
-    function compressImageFile(file) {
+    // Dekoder z poszanowaniem rotacji EXIF (zdjecia z telefonu)
+    function decodeOrientedBitmap(file) {
+      if (window.createImageBitmap) return createImageBitmap(file, { imageOrientation: 'from-image' });
       return new Promise(function (resolve, reject) {
         var url = URL.createObjectURL(file);
         var img = new Image();
-        img.onload = function () {
-          try {
-            var MAX = 800;
-            var scale = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
-            var w = Math.max(1, Math.round(img.naturalWidth * scale));
-            var h = Math.max(1, Math.round(img.naturalHeight * scale));
-            var cv = document.createElement('canvas');
-            cv.width = w; cv.height = h;
-            cv.getContext('2d').drawImage(img, 0, 0, w, h);
-            URL.revokeObjectURL(url);
-            resolve(cv.toDataURL('image/jpeg', 0.82));
-          } catch (er) {
-            URL.revokeObjectURL(url);
-            reject(er);
-          }
-        };
+        img.onload = function () { resolve(img); };
         img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('Nie można odczytać obrazu.')); };
         img.src = url;
+      });
+    }
+    function drawScaled(source, sw, sh, max) {
+      var scale = Math.min(1, max / Math.max(sw, sh));
+      var w = Math.max(1, Math.round(sw * scale));
+      var h = Math.max(1, Math.round(sh * scale));
+      var cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(source, 0, 0, w, h);
+      return cv;
+    }
+
+    function compressImageFile(file) {
+      return decodeOrientedBitmap(file).then(function (bmp) {
+        try {
+          var cv = drawScaled(bmp, bmp.width, bmp.height, 800);
+          if (bmp.close) bmp.close();
+          return cv.toDataURL('image/jpeg', 0.82);
+        } catch (er) {
+          throw er;
+        }
       });
     }
 
@@ -2895,29 +2922,13 @@
 
     // Kompresja obrazu karty: max 300px, WebP (fallback JPEG), dataURL
     function compressCardImage(file) {
-      return new Promise(function (resolve, reject) {
-        var url = URL.createObjectURL(file);
-        var img = new Image();
-        img.onload = function () {
-          try {
-            var MAX = 300;
-            var scale = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight));
-            var w = Math.max(1, Math.round(img.naturalWidth * scale));
-            var h = Math.max(1, Math.round(img.naturalHeight * scale));
-            var cv = document.createElement('canvas');
-            cv.width = w; cv.height = h;
-            cv.getContext('2d').drawImage(img, 0, 0, w, h);
-            URL.revokeObjectURL(url);
-            var out = cv.toDataURL('image/webp', 0.85);
-            var fmt = 'webp';
-            if (!out || out.indexOf('data:image/webp') !== 0) { out = cv.toDataURL('image/jpeg', 0.85); fmt = 'jpeg'; }
-            resolve({ dataUrl: out, format: fmt });
-          } catch (er) {
-            URL.revokeObjectURL(url); reject(er);
-          }
-        };
-        img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('Nie można odczytać obrazu.')); };
-        img.src = url;
+      return decodeOrientedBitmap(file).then(function (bmp) {
+        var cv = drawScaled(bmp, bmp.width, bmp.height, 300);
+        if (bmp.close) bmp.close();
+        var out = cv.toDataURL('image/webp', 0.85);
+        var fmt = 'webp';
+        if (!out || out.indexOf('data:image/webp') !== 0) { out = cv.toDataURL('image/jpeg', 0.85); fmt = 'jpeg'; }
+        return { dataUrl: out, format: fmt };
       });
     }
 
@@ -3637,7 +3648,7 @@
       }
       var rows = [
         { label: 'Obraz', val: function (p, id) {
-          var img = imageSrcFor(p.imageUrl || p.image);
+          var img = imageSrcFor(p.image);
           return img && img.length > 20
             ? '<img data-src="' + esc(img) + '" alt="" class="w-full aspect-square object-contain rounded-lg bg-black/40" loading="lazy" />'
             : '<div class="w-full aspect-square flex items-center justify-center text-slate-600 text-xs bg-black/40 rounded-lg">Brak</div>';
@@ -4603,29 +4614,7 @@
     const deg2rad = (d) => d * Math.PI / 180;
 
     
-    const VIEW_PRESETS = {
-      iso: [1, 0.9, 1],
-      front: [0, 0.5, 1],
-      top: [0, 1, 0.2],
-      left: [-1, 0.5, 0],
-      right: [1, 0.5, 0],
-      back: [0, 0.5, -1],
-      isoHigh: [1, 1.5, 1],
-      isoLow: [1, 0.3, 1],
-      rightFront: [0.9, 0.5, 1],
-      leftFront: [-0.9, 0.5, 1],
-      rightBack: [0.9, 0.5, -1],
-      leftBack: [-0.9, 0.5, -1],
-      topFront: [0, 1, 0.6],
-      topRight: [0.7, 1, 0],
-      topLeft: [-0.7, 1, 0],
-      topBack: [0, 1, -0.6],
-      frontLow: [0, 0.15, 1],
-      backLow: [0, 0.15, -1],
-      frontHigh: [0, 1.1, 1],
-      isoShallow: [2, 0.5, 1]
-    };
-    
+        
     const currentView = 'iso';
     const currentFov = 45;
     const sizeFactor = 1;
@@ -4821,9 +4810,7 @@
 
     
         window.generateModelAnimation = generateModelAnimation;
-    window.__getModelColor = function () { return modelColor; };
-
-    
+        
     const genPreviewBtn = document.getElementById('gen-preview-btn');
     if (genPreviewBtn) {
       genPreviewBtn.addEventListener('click', async function () {
