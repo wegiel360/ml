@@ -14,20 +14,18 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <link rel="apple-touch-icon" href="logo-180.png" />
 
-<!-- Preconnect do kluczowych źródeł (szybsze ładowanie SDK i CDN) -->
+
   <link rel="preconnect" href="https://www.gstatic.com" />
   <link rel="preconnect" href="https://www.googleapis.com" />
   <link rel="preconnect" href="https://cdn.tailwindcss.com" />
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
 
-  <!-- Kleje animacji (Faza 7/8): anime.js + konfetti -->
+  
   <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@hiseb/confetti@2.2.0/dist/confetti.min.js"></script>
 
-  <!-- ============================================================
-       T A I L W I N D  (CDN Play) - klasy narzędziowe
-       ============================================================ -->
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -48,19 +46,13 @@
     };
   </script>
 
-  <!-- ============================================================
-       F I R E B A S E  (Compat SDK - Realtime Database)
-       Prawdziwa konfiguracja projektu Masło Lab (maslo-3d).
-       ============================================================ -->
+  
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-  <!-- ============================================================
-       Q R C O D E  - ładowany lazy (tylko gdy potrzebny),
-       aby nie obciążać początkowego ładowania strony.
-       ============================================================ -->
+  
 
-  <!-- Tło aplikacji: SVG z assets.json (Base122), dobierane do proporcji ekranu przez JS (skrypt na początku body) -->
+  
   <style>
     body {
       background-color: #0b0f1a;
@@ -242,7 +234,7 @@
     }
   </style>
 
-  <!-- Motyw: ciemny, kolor akcentu nadbija Tailwinda zmiennymi CSS. -->
+  
   <style>
     html {
       --m-accent: #009473;       /* wiodący kolor strony */
@@ -285,7 +277,7 @@
     }
   </style>
 
-  <!-- Three.js (moduł ES) do generowania miniaturki z modelu 3D -->
+  
   <script type="importmap">
   {
     "imports": {
@@ -298,7 +290,7 @@
 
 <body class="bg-base text-slate-200 font-sans min-h-screen">
 
-  <!-- ============ JEDNOLITY GÓRNY PASEK NAWIGACJI ============ -->
+  
   <nav id="app-nav" aria-label="Nawigacja główna">
     <div class="max-w-6xl mx-auto px-4 py-2 flex items-center gap-2 flex-wrap">
       <a href="?" data-nav="shop" class="nav-item" title="Sklep">
@@ -322,7 +314,6 @@
         </button>
         <div id="cart-preview" class="hidden"></div>
       </div>
-      <button type="button" id="lang-toggle" class="nav-item font-semibold" title="Language / Język">EN</button>
       <button type="button" class="nav-item" data-nav="admin" title="Panel">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
         <span class="hidden md:inline">Panel</span>
@@ -335,7 +326,7 @@
     </div>
   </nav>
 
-  <!-- Tło SVG z assets.json (Base122) dobierane do proporcji ekranu -->
+  
   <script>
     (function () {
       function pickRatio(r, keys) {
@@ -390,10 +381,7 @@
     })();
   </script>
 
-  <!-- ============================================================
-       K O N F I G U R A C J A  F I R E B A S E  (poprawne, działające)
-       Baza działa w trybie publicznym (bez logowania).
-       ============================================================ -->
+  
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCjxTrMAGYPXf_42EGQDVj4b_6uiZAhNSI",
@@ -408,12 +396,7 @@
     const db = firebase.firestore();
   </script>
 
-  <!-- ============================================================
-       B A S E 1 2 2  E N C O D E R / D E C O D E R
-       Alfabet 122 znaków (podany przez użytkownika).
-       Overhead vs binarny ~15% (Base64 miał 33%).
-       Użyty do kompresji zdjęć (AVIF) i plików 3D w Firestore.
-       ============================================================ -->
+  
   <script>
     const BASE122_ALPHABET = '!#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~¡¢£¤¥§¨©ª«¬®¯°±²³µ¶·¸¹º»¼½¾¿ÀÁ';
     const BASE122_REV_MAP = {};
@@ -619,9 +602,7 @@
     }
   </script>
 
-  <!-- ============================================================
-       L O G I K A  A P L I K A C J I
-       ============================================================ -->
+  
   <script>
     'use strict';
 
@@ -651,7 +632,6 @@
     
     let settings = { mode: 'queue', banner: '', adminPasswordHash: '', printersStatus: {} };
     let firstDataLoaded = false; 
-    let ordersLoaded = false; 
     let products = {}; 
     let orders = {};   
 
@@ -725,103 +705,8 @@
     
     const CART_KEY = 'maslolab_cart';
 
-    /* --- Język interfejsu (widoki klienta): PL domyslnie, EN opcjonalnie --- */
-    var LANG = 'pl';
-    try { LANG = localStorage.getItem('maslolab_lang') === 'en' ? 'en' : 'pl'; } catch (e) {}
-    var I18N_EN = {
-      'Sklep': 'Shop', 'Status': 'Status', 'Koszyk': 'Cart', 'Panel': 'Admin', 'Wyloguj': 'Log out',
-      'Zamów własny wydruk 3D': 'Order your own 3D print',
-      'Wybierz oferty, a koszyk pokaże łączną wagę. Odbiór w szkole.': 'Pick items and the cart will show total weight. Pickup at school.',
-      'Dostępne oferty': 'Available items',
-      'Szukaj po nazwie...': 'Search by name...',
-      'Nazwa (A–Z)': 'Name (A–Z)', 'Czas druku (od najkrótszego)': 'Print time (shortest first)',
-      'Waga (od najlżejszego)': 'Weight (lightest first)', 'Stan magazynowy': 'Stock',
-      'Brak ofert w sklepie.': 'No items in the shop.',
-      'Zajrzyj wkrótce - nowe wydruki pojawią się tutaj.': 'Check back soon - new prints will appear here.',
-      'Do koszyka': 'Add to cart', 'Odtwórz': 'Play tone', 'Porównaj': 'Compare', 'Wyczyść': 'Clear',
-      'Porównanie (': 'Comparison (', 'Dodaj do porównania': 'Add to comparison',
-      'Porównanie ofert': 'Item comparison',
-      'Dodaj co najmniej 2 oferty do porównania.': 'Add at least 2 items to compare.',
-      'Obraz': 'Image', 'Nazwa': 'Name', 'Czas druku': 'Print time', 'Waga': 'Weight',
-      'Stan magazynu': 'Stock', 'Gwizdek': 'Whistle',
-      'Drukowanie…': 'Printing…', 'Wolna': 'Free',
-      'Niedostępna': 'Unavailable', 'W trakcie konserwacji': 'Under maintenance', 'Po lekcjach': 'After classes',
-      'druku': 'print', 'Brak w magazynie': 'Out of stock', 'Stan: ': 'Stock: ',
-      'Zestaw (': 'Bundle (', 'el.)': ' items)',
-      'Pobierz plik 3D (': 'Download 3D file (', 'Model autora': 'Author model',
-      'Zrobione przez @': 'Made by @',
-      'Dodaj do koszyka': 'Add to cart', 'Produkt chwilowo niedostępny.': 'Item temporarily unavailable.',
-      'Ładowanie…': 'Loading…', 'Produkt nie znaleziony.': 'Item not found.',
-      'Wróć do sklepu': 'Back to shop',
-      'Błąd animacji': 'Animation error', 'Warianty:': 'Variants:',
-      'Dane': 'Details', 'Dostawa': 'Delivery', 'Podsum.': 'Summary',
-      'Dalej': 'Next', 'Wejdź do kolejki': 'Join the queue', 'Zamknij': 'Close',
-      'Usuń': 'Remove', 'Twój koszyk jest pusty.': 'Your cart is empty.',
-      'Koszyk jest pusty': 'Cart is empty', 'Koszyk jest pusty.': 'Cart is empty.',
-      'Imię *': 'First name *', 'Inicjał nazwiska (opcjonalnie)': 'Last-name initial (optional)',
-      'Podawanie imienia i inicjału jest potrzebne TYLKO do procesu dostawy.': 'Your name and initial are needed ONLY for delivery.',
-      'Płatność': 'Payment', 'Brak (przy odbiorze)': 'None (pay on pickup)',
-      'Tryb zbierania kolejki — zamówienie poczeka na realizację.': 'Queue mode - your order will wait to be processed.',
-      'Zamówienie trafi do druku.': 'Your order will go straight to printing.',
-      'Odbierający': 'Pickup person', 'Łączna waga': 'Total weight',
-      'Zamówienie #': 'Order #', 'Jesteś ': 'You are ', '.': '.', ' w kolejce': ' in queue',
-      ' osób w kolejce)': ' people in queue)',
-      'Szacowany czas dostawy': 'Estimated delivery', 'nieznany': 'unknown',
-      'Śledź zamówienie': 'Track order',
-      'Status zamówienia': 'Order status', 'Na żywo': 'Live', 'Postęp realizacji': 'Progress',
-      'Drukuje na: ': 'Printing on: ',
-      'Nie znaleziono zamówienia': 'Order not found',
-      'Nie ma zamówienia o podanym numerze w systemie. Sprawdź poprawność numeru i spróbuj ponownie.': 'No order with this number. Check the code and try again.',
-      'Zamówienie nie istnieje lub zostało anulowane przez administratora': 'The order does not exist or was cancelled by the administrator',
-      'Powód anulowania: ': 'Cancellation reason: ',
-      'Szukam zamówienia...': 'Looking up your order...',
-      'Sprawdzam numer w systemie.': 'Checking the number in the system.',
-      'Szacowany czas druku': 'Estimated print time',
-      'W kolejce': 'Queued', 'Drukuje się': 'Printing', 'W drodze': 'On the way', 'Doręczone': 'Delivered',
-      'Zamówienie trolowskie / Fałszywe': 'Troll / fake order',
-      'Brak materiału (Filamentu)': 'Out of filament',
-      'Błąd wydruku / Awaria drukarki': 'Print failed / printer issue',
-      'Inny powód': 'Other reason',
-      'Śledź paczkę': 'Track your order',
-      'Wpisz 3-cyfrowy numer zamówienia otrzymany po złożeniu.': 'Enter the 3-digit order number you received.',
-      'Numer zamówienia': 'Order number', 'Otwórz': 'Open', 'Anuluj': 'Cancel',
-      'Podaj 3-cyfrowy numer zamówienia.': 'Enter the 3-digit order number.',
-      'Dodano do koszyka': 'Added to cart',
-      'Osiągnięto stan magazynowy (': 'Stock limit reached (',
-      'Maksymalnie ': 'Maximum ', ' różnych ofert w jednym zamówieniu.': ' different items per order.',
-      'Odczekaj jeszcze ': 'Wait ', ' s przed złożeniem kolejnego zamówienia.': ' s before placing another order.',
-      'Dziękujemy, ': 'Thank you, ', '!': '!'
-    };
     function t(str) {
-      if (LANG !== 'en') return str;
-      var v = I18N_EN[str];
-      return v === undefined ? str : v;
-    }
-    function setLang(lang) {
-      LANG = lang === 'en' ? 'en' : 'pl';
-      try { localStorage.setItem('maslolab_lang', LANG); } catch (e) {}
-      document.documentElement.lang = LANG;
-      applyStaticI18n();
-      updateLangToggle();
-      route();
-      renderCartStep();
-    }
-    function applyStaticI18n() {
-      document.querySelectorAll('[data-i18n]').forEach(function (el) { el.textContent = t(el.getAttribute('data-i18n')); });
-      document.querySelectorAll('[data-i18n-ph]').forEach(function (el) { el.placeholder = t(el.getAttribute('data-i18n-ph')); });
-      var cmpLbl = document.getElementById('cmp-label-text');
-      if (cmpLbl) cmpLbl.textContent = t('Porównanie (');
-      var sortEl = document.getElementById('shop-sort');
-      if (sortEl) {
-        var cur = shopSort;
-        sortEl.innerHTML = ['name|Nazwa (A–Z)', 'time|Czas druku (od najkrótszego)', 'weight|Waga (od najlżejszego)', 'stock|Stan magazynowy']
-          .map(function (o) { var p = o.split('|'); return '<option value="' + p[0] + '"' + (cur === p[0] ? ' selected' : '') + '>' + t(p[1]) + '</option>'; }).join('');
-        sortEl.value = cur;
-      }
-    }
-    function updateLangToggle() {
-      var b = document.getElementById('lang-toggle');
-      if (b) b.textContent = LANG === 'pl' ? 'EN' : 'PL';
+      return str;
     }
 
     
@@ -1497,7 +1382,6 @@
         .where('isDeleted', '==', false)
         .limit(500)
         .onSnapshot(function (snap) {
-          ordersLoaded = true;
           snap.docChanges().forEach(function (change) {
             if (change.type === 'added' || change.type === 'modified') {
               orders[change.doc.id] = change.doc.data();
@@ -1774,6 +1658,20 @@
         '    <h1 class="text-2xl font-bold text-white">' + esc(p.name) + '</h1>' +
         '  </div>' +
         (p.desc ? '    <p class="text-slate-400 mt-4 leading-relaxed">' + esc(p.desc) + '</p>' : '') +
+        '    <div class="mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] p-5 text-sm leading-relaxed text-slate-300">' +
+        '      <p class="text-xl font-extrabold text-red-400 tracking-wide mb-2">UWAGA!</p>' +
+        '      <p class="mb-3">Produkt jest zrobiony z plastiku. Gryzienie lub branie go do ust może skutkować wprowadzeniem do organizmu szkodliwego mikroplastiku, toksycznych barwników oraz bakterii zbierających się między warstwami druku. Nie jest to zabawka dla małych dzieci ani gryzak.</p>' +
+        '      <p class="font-extrabold uppercase mb-2 text-slate-100">Nie odpowiadam za nieodpowiednie użycie tego przedmiotu przez nowego właściciela. Obejmuje to min.:</p>' +
+        '      <ul class="list-disc pl-5 space-y-1 mb-3">' +
+        '        <li>Głośne gwizdanie na korytarzu szkolnym podczas lekcji i przerw (ryzyko uwagi lub konfiskaty przez nauczyciela).</li>' +
+        '        <li>Używanie syreny bezpośrednio przy uchu innych osób (grozi trwałym uszkodzeniem słuchu).</li>' +
+        '        <li>Celowe straszenie zwierząt lub zakłócanie porządku publicznego.</li>' +
+        '        <li>Samodzielne rozklejenie obudowy, zgubienie ruchomych wirników lub połknięcie małych części wariantu składanego.</li>' +
+        '        <li>Uruchamianie syreny w salach lekcyjnych, toaletach oraz w trakcie trwania sprawdzianów.</li>' +
+        '        <li>Uszkodzenie lub stopienie modelu poprzez zostawienie go na pełnym słońcu, próby mycia w zmywarce/wrzątku lub tym podobnych. (PLA mięknie przy 50–60°C)</li>' +
+        '      </ul>' +
+        '      <p>Produkt nie jest objęty żadną gwarancją ani rękojmią. Jest udostępniany w stanie, w jakim się znajduje.</p>' +
+        '    </div>' +
         (p.madeBy ? '    <p class="mt-4 text-2xl font-extrabold text-accent drop-shadow-[0_0_18px_rgba(0,148,115,0.45)]">' + t('Zrobione przez @') + esc(p.madeBy) + '</p>' : '') +
         '    <div class="mt-4 flex flex-wrap gap-2">' +
         '      <span class="bg-white/5 border border-white/10 rounded-full px-3 py-1 text-sm text-slate-300">' + fmtTime(p.printTimeSec) + ' ' + t('druku') + '</span>' +
@@ -4202,11 +4100,6 @@
       loadAssets().then(function () { renderPrinters(); }).catch(function (e) { console.error('assets:', e); });
       refreshPublicPrinterActivity();
       setInterval(refreshPublicPrinterActivity, 60000);
-      document.documentElement.lang = LANG;
-      applyStaticI18n();
-      updateLangToggle();
-      var ltBtn = document.getElementById('lang-toggle');
-      if (ltBtn) ltBtn.addEventListener('click', function () { setLang(LANG === 'pl' ? 'en' : 'pl'); });
 
 
       
@@ -4318,13 +4211,11 @@
     });
   </script>
 
-  <!-- ============================================================
-       S Z A B L O N Y   W I D O K Ó W
-       ============================================================ -->
+  
 
-  <!-- ================= WIDOK 1: SKLEP ================= -->
+  
   <div id="view-shop" data-view class="hidden">
-    <!-- BANER TRYBU -->
+    
     <div class="max-w-6xl mx-auto px-4 pt-4">
       <div id="shop-banner"
         class="hidden text-sm font-medium text-amber-200 bg-amber-400/10 border border-amber-400/30 rounded-xl px-4 py-3"></div>
@@ -4332,27 +4223,27 @@
 
     <main class="max-w-6xl mx-auto px-4 py-8">
       <section class="text-center mb-10">
-        <h2 data-i18n="Zamów własny wydruk 3D" class="text-3xl sm:text-4xl font-bold text-white">Zamów własny wydruk 3D</h2>
-        <p data-i18n="Wybierz oferty, a koszyk pokaże łączną wagę. Odbiór w szkole." class="text-slate-400 mt-2 max-w-xl mx-auto">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white">Zamów własny wydruk 3D</h2>
+        <p class="text-slate-400 mt-2 max-w-xl mx-auto">
           Wybierz oferty, a koszyk pokaże łączną wagę. Odbiór w szkole.
         </p>
       </section>
 
-      <!-- SEKCJA DRUKAREK -->
+      
       <section class="mb-8">
         <div id="printer-section" class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-4"></div>
       </section>
 
       <section>
         <div class="flex items-center justify-between mb-4">
-          <h3 data-i18n="Dostępne oferty" class="text-sm uppercase tracking-wide text-slate-500 font-semibold">Dostępne oferty</h3>
+          <h3 class="text-sm uppercase tracking-wide text-slate-500 font-semibold">Dostępne oferty</h3>
         </div>
 
-        <!-- PASEK NARZĘDZI (W3): wyszukiwarka, filtry, sortowanie -->
+        
         <div class="bg-panel border border-white/10 rounded-2xl p-4 mb-6">
           <div class="flex flex-col lg:flex-row gap-3">
             <div class="flex-1">
-              <input id="shop-search" type="text" data-i18n-ph="Szukaj po nazwie..." placeholder="Szukaj po nazwie..." value=""
+              <input id="shop-search" type="text" placeholder="Szukaj po nazwie..." value=""
                 class="w-full bg-base border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-accent focus:outline-none" />
             </div>
             <div>
@@ -4370,14 +4261,14 @@
       </section>
     </main>
 
-    <!-- MODAL: ŚLEDŹ PACZKĘ (wpisz 3-cyfrowy numer zamówienia) -->
+    
     <div id="track-lookup-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <div class="bg-panel border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
-        <h3 data-i18n="Śledź paczkę" class="text-lg font-bold text-white mb-1">Śledź paczkę</h3>
-        <p data-i18n="Wpisz 3-cyfrowy numer zamówienia otrzymany po złożeniu." class="text-sm text-slate-400 mb-4">Wpisz 3-cyfrowy numer zamówienia otrzymany po złożeniu.</p>
+        <h3 class="text-lg font-bold text-white mb-1">Śledź paczkę</h3>
+        <p class="text-sm text-slate-400 mb-4">Wpisz 3-cyfrowy numer zamówienia otrzymany po złożeniu.</p>
         <form id="track-lookup-form" class="space-y-4">
           <div>
-            <label data-i18n="Numer zamówienia" class="block text-sm text-slate-400 mb-1">Numer zamówienia</label>
+            <label class="block text-sm text-slate-400 mb-1">Numer zamówienia</label>
             <input id="track-lookup-code" type="text" inputmode="numeric" pattern="\d{3}" maxlength="3" required
               placeholder="np. 294"
               class="w-full bg-base border border-white/10 rounded-xl px-4 py-2.5 text-white text-center text-2xl font-mono tracking-widest focus:border-accent focus:outline-none" />
@@ -4385,18 +4276,18 @@
           <p id="track-lookup-error" class="text-sm text-red-300"></p>
           <div class="flex gap-3">
             <button type="submit"
-              data-i18n="Otwórz" class="flex-1 py-2.5 rounded-xl font-semibold bg-accent text-slate-900 transition-all">Otwórz</button>
+              class="flex-1 py-2.5 rounded-xl font-semibold bg-accent text-slate-900 transition-all">Otwórz</button>
             <button type="button" id="track-lookup-close"
-              data-i18n="Anuluj" class="px-4 py-2.5 rounded-xl font-semibold bg-base border border-white/10 text-slate-300 hover:border-white/30 transition-all">Anuluj</button>
+              class="px-4 py-2.5 rounded-xl font-semibold bg-base border border-white/10 text-slate-300 hover:border-white/30 transition-all">Anuluj</button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- KARTA PODSUMOWANIA PO ZAMÓWIENIU -->
+    
   </div>
 
-  <!-- ================= WIDOK 2: ŚLEDZENIE ================= -->
+  
   <div id="view-tracking" data-view class="hidden">
     <div class="min-h-screen flex flex-col">
       <main class="flex-1 flex items-center justify-center px-4 py-10">
@@ -4406,7 +4297,7 @@
     </div>
   </div>
 
-  <!-- ================= WIDOK: PODSTRONA PRODUKTU ================= -->
+  
   <div id="view-product" data-view class="hidden">
     <div class="min-h-screen flex flex-col">
       <main class="flex-1 px-4 py-8">
@@ -4416,7 +4307,7 @@
     </div>
   </div>
 
-  <!-- ================= WIDOK: LOGOWANIE DO PANELU ================= -->
+  
   <div id="view-admin-login" data-view class="hidden">
     <div class="min-h-screen flex flex-col">
       <main class="flex-1 flex items-center justify-center px-4 py-10">
@@ -4456,11 +4347,11 @@
     </div>
   </div>
 
-  <!-- ================= WIDOK 3: PANEL ADMINA ================= -->
+  
   <div id="view-admin" data-view class="hidden">
     <div class="max-w-7xl mx-auto px-4 py-6 lg:py-8">
 
-      <!-- ZAKŁADKI PANELU (poziome, pod główną nawigacją) -->
+      
       <nav aria-label="Panel administratora" class="mb-6">
         <div class="bg-panel border border-white/10 rounded-2xl p-2 flex gap-1 overflow-x-auto">
           <button type="button" class="admin-tab flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all" data-admin-tab="products">
@@ -4478,10 +4369,10 @@
         </div>
       </nav>
 
-      <!-- ZAWARTOŚĆ PANELU -->
+      
       <div class="min-w-0">
 
-        <!-- USTAWIENIA -->
+        
         <section id="adm-settings" class="admin-sec hidden">
           <div class="bg-panel border border-white/10 rounded-2xl p-6">
             <h3 class="text-lg font-bold text-white mb-4">Ustawienia sklepu</h3>
@@ -4511,10 +4402,10 @@
           </div>
         </section>
 
-        <!-- PRODUKTY -->
+        
       <section id="adm-products" class="admin-sec">
       <div class="space-y-8">
-        <!-- Formularz dodawania/edycji -->
+        
         <div id="admin-form" class="bg-panel border border-white/10 rounded-2xl p-6 hidden">
           <h3 id="admin-form-title" class="text-lg font-bold text-white mb-4">Dodaj nowy produkt</h3>
           <form id="admin-product-form" class="space-y-4">
@@ -4735,7 +4626,7 @@
           </form>
         </div>
 
-        <!-- Lista produktów -->
+        
         <div class="bg-panel border border-white/10 rounded-2xl p-6">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-bold text-white">Produkty w sklepie</h3>
@@ -4756,13 +4647,13 @@
               <tbody id="admin-products"></tbody>
             </table>
           </div>
-          <!-- Karty produktów (mobile) -->
+          
           <div id="admin-products-cards" class="md:hidden space-y-3"></div>
         </div>
       </div>
       </section>
 
-      <!-- TABELA ZAMÓWIEŃ + KOLEJKA DRUKU -->
+      
       <section id="adm-orders" class="admin-sec hidden">
         <div class="bg-panel border border-white/10 rounded-2xl p-6 mb-10">
           <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
@@ -4804,7 +4695,7 @@
             <tbody id="orders-tbody"></tbody>
           </table>
           </div>
-          <!-- Karty zamówień (mobile) -->
+          
           <div id="orders-cards" class="md:hidden space-y-3"></div>
         </div>
       </section>
@@ -4812,7 +4703,7 @@
     </div>
     </div>
 
-    <!-- MODAL: ANULOWANIE -->
+    
     <div id="cancel-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <div class="bg-panel border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl">
         <h3 class="text-lg font-bold text-white mb-1">Anuluj i usuń zamówienie</h3>
@@ -4825,15 +4716,12 @@
 
   </div>
 
-  <!-- TOAST -->
+  
   <div id="toast"
     class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] bg-slate-800 border border-white/10 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-2xl opacity-0 pointer-events-none transition-opacity duration-300">
   </div>
 
-  <!-- ============================================================
-       Generowanie animacji 360 (GIF) z modelu 3D (STL) przez Three.js.
-       Render 400px, 24 klatki -> gifenc -> Base122 (#product-preview-data).
-       ============================================================ -->
+  
   <script type="module">
     import * as THREE from 'three';
     import { STLLoader } from 'three/addons/loaders/STLLoader.js';
@@ -5116,7 +5004,7 @@
     }
   </script>
 
-  <!-- ============ WIDOK KOSZYKA (osobna strona /koszyk, kroki 1-4) ============ -->
+  
   <div id="view-koszyk" data-view class="hidden min-h-screen bg-base">
     <div class="max-w-2xl mx-auto px-4 py-6">
       <div class="bg-panel border border-white/10 rounded-2xl p-5">
@@ -5128,24 +5016,24 @@
     </div>
   </div>
 
-  <!-- ============ PORÓWNYWARKA (pływający pasek) ============ -->
+  
   <div id="compare-fab" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-40 bg-panel border border-white/10 rounded-2xl px-4 py-3 shadow-2xl flex items-center gap-3 flex-wrap justify-center">
     <span class="text-xs text-slate-400 shrink-0"><span id="cmp-label-text">Porównanie (</span><span id="compare-count">0</span>/3):</span>
     <span id="compare-items" class="flex flex-wrap gap-1.5 shrink-0"></span>
-    <button id="compare-open" data-i18n="Porównaj" class="shrink-0 px-3 py-1.5 rounded-lg bg-accent text-slate-900 font-semibold text-sm">Porównaj</button>
-    <button id="compare-clear" data-i18n="Wyczyść" class="shrink-0 px-2 py-1.5 rounded-lg bg-base border border-white/10 text-slate-400 hover:text-red-300 text-sm">Wyczyść</button>
+    <button id="compare-open" class="shrink-0 px-3 py-1.5 rounded-lg bg-accent text-slate-900 font-semibold text-sm">Porównaj</button>
+    <button id="compare-clear" class="shrink-0 px-2 py-1.5 rounded-lg bg-base border border-white/10 text-slate-400 hover:text-red-300 text-sm">Wyczyść</button>
   </div>
 
-  <!-- ============ PORÓWNYWARKA (overlay wynik) ============ -->
+  
   <div id="compare-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
     <div class="bg-panel border border-white/10 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
-      <h3 data-i18n="Porównanie ofert" class="text-lg font-bold text-white mb-4">Porównanie ofert</h3>
+      <h3 class="text-lg font-bold text-white mb-4">Porównanie ofert</h3>
       <div id="compare-result" class="overflow-x-auto"></div>
-      <button id="compare-close" data-i18n="Zamknij" class="mt-4 w-full py-2.5 rounded-xl font-semibold bg-base border border-white/10 text-slate-300 hover:border-white/30 transition-all">Zamknij</button>
+      <button id="compare-close" class="mt-4 w-full py-2.5 rounded-xl font-semibold bg-base border border-white/10 text-slate-300 hover:border-white/30 transition-all">Zamknij</button>
     </div>
   </div>
 
-  <!-- ============ LIGHTBOX (powiększenie zdjęcia) ============ -->
+  
   <div id="lightbox" class="hidden fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4">
     <button id="lightbox-close" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white text-xl flex items-center justify-center hover:bg-white/20">&times;</button>
     <button id="lightbox-prev" class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 text-white text-xl flex items-center justify-center hover:bg-white/20">&larr;</button>
@@ -5153,7 +5041,7 @@
     <img id="lightbox-img" src="" alt="" class="max-w-full max-h-full rounded-xl object-contain" />
   </div>
 
-  <!-- ============ SKELETON (wzorzec) ============ -->
+  
   <template id="skeleton-card">
     <div class="bg-panel border border-white/5 rounded-2xl overflow-hidden flex flex-col">
       <div class="skeleton aspect-square"></div>
