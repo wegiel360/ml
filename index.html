@@ -4542,6 +4542,7 @@
                 </div>
               </div>
             </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             <div>
               <p class="block text-sm font-semibold text-slate-300 mb-1">Animacja 360° (wymagana)</p>
               <input id="product-color" type="hidden" value="czekolada" />
@@ -4583,7 +4584,7 @@
               </div>
             </div>
             <div>
-              <label class="block text-sm text-slate-400 mb-1">Obraz zamiast animacji (opcjonalnie — użyty gdy brak GIF-a)</label>
+              <label class="block text-sm font-semibold text-slate-300 mb-1">Prześlij obraz</label>
               <input id="product-image-file" type="file" accept="image/*"
                 class="w-full text-sm text-slate-400 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-base file:text-accent file:font-semibold file:cursor-pointer" />
               <input id="product-image-data" type="hidden" value="" />
@@ -4591,6 +4592,8 @@
               <p id="product-image-note" class="text-xs text-slate-500 mt-1"></p>
               <button id="product-image-remove" type="button" class="hidden mt-1 text-xs text-red-400 hover:text-red-300">Usuń obraz</button>
             </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             <div>
               <label class="block text-sm text-slate-400 mb-1">Plik 3D (STL, <span class="text-accent">wymagany</span> — z niego powstaje miniaturka)</label>
               <input id="product-model" type="file" accept=".stl"
@@ -4606,15 +4609,16 @@
               <div id="product-photos-preview" class="flex flex-wrap gap-2 mt-2"></div>
               <p class="text-xs text-slate-500 mt-1">Miniaturka produktu to obrazek z modelu 3D. Te zdjęcia dodasz do galerii przeglądanej na podstronie oferty.</p>
             </div>
-            <div>
-              <label class="block text-sm text-slate-400 mb-1">Zrobione przez @ (autor — duży napis na stronie oferty)</label>
-              <input id="product-made-by" type="text" placeholder="np. kowalski_3d"
-                class="w-full bg-base border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-accent focus:outline-none" />
             </div>
             <div>
-              <label class="block text-sm text-slate-400 mb-1">Link do modelu autora</label>
-              <input id="product-author-link" type="text" placeholder="https://www.thingiverse.com/thing:12345"
-                class="w-full bg-base border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-accent focus:outline-none" />
+              <label class="block text-sm text-slate-400 mb-1">Zrobione przez @</label>
+              <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                <input id="product-made-by" type="text" placeholder="np. kowalski_3d"
+                  class="flex-1 min-w-0 bg-base border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-accent focus:outline-none" />
+                <span class="text-sm text-slate-400 whitespace-nowrap">na stronie</span>
+                <input id="product-author-link" type="text" placeholder="https://www.thingiverse.com/thing:12345"
+                  class="flex-1 min-w-0 bg-base border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-accent focus:outline-none" />
+              </div>
             </div>
             <div id="admin-form-error" class="hidden text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2.5 mb-2"></div>
             <div class="flex gap-3 pt-1">
