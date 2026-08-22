@@ -4835,6 +4835,7 @@
       let box = new THREE.Box3().setFromObject(product);
       const center = box.getCenter(new THREE.Vector3());
       product.position.set(-center.x, -center.y, -center.z);
+      product.rotation.y = deg2rad(animYDeg);
       product.updateMatrixWorld(true);
 
       box = new THREE.Box3().setFromObject(product);
@@ -4859,7 +4860,7 @@
       const ORBIT_SAMPLES = 24;
       let dist = 1;
       for (let s = 0; s < ORBIT_SAMPLES; s++) {
-        const ang = deg2rad(animYDeg) + (s / ORBIT_SAMPLES) * 2 * Math.PI;
+        const ang = (s / ORBIT_SAMPLES) * 2 * Math.PI;
         const dirS = new THREE.Vector3(Math.sin(ang), elevation, Math.cos(ang)).normalize();
         const rightS = new THREE.Vector3().crossVectors(dirS, vUp).normalize();
         const upBS = new THREE.Vector3().crossVectors(rightS, dirS).normalize();
@@ -4900,7 +4901,7 @@
       const encoder = new GifencEncoder();
       let globalPalette = null;
       for (let f = 0; f < frames; f++) {
-        const a = deg2rad(animYDeg) + f * angleStep;
+        const a = f * angleStep;
         const dir = new THREE.Vector3(Math.sin(a), elevation, Math.cos(a)).normalize();
         camera.position.copy(c2).add(dir.multiplyScalar(renderDist));
         camera.lookAt(c2);
