@@ -2992,6 +2992,7 @@
         box.appendChild(wrap);
       });
       if (hidden) hidden.value = JSON.stringify(productPhotos);
+      syncCardFromPhotos();
     }
 
     
@@ -3047,51 +3048,33 @@
       });
     }
 
-    // Kompresja obrazu karty: max 300px, WebP (fallback JPEG), dataURL
-    function compressCardImage(file) {
-      return decodeOrientedBitmap(file).then(function (bmp) {
-        var cv = drawScaled(bmp, bmp.width, bmp.height, 300);
-        if (bmp.close) bmp.close();
-        var out = cv.toDataURL('image/webp', 0.85);
-        var fmt = 'webp';
-        if (!out || out.indexOf('data:image/webp') !== 0) { out = cv.toDataURL('image/jpeg', 0.85); fmt = 'jpeg'; }
-        return { dataUrl: out, format: fmt };
-      });
-    }
-
-    let cardImageRemoved = false;
-    function handleCardImageSelect(e) {
-      var file = e.target.files && e.target.files[0];
-      if (!file) return;
-      var note = document.getElementById('product-image-note');
-      if (file.type && file.type.indexOf('image/') !== 0) { alert('Wybierz plik graficzny.'); e.target.value = ''; return; }
-      if (note) note.textContent = 'Kompresja...';
-      compressCardImage(file).then(function (res) {
-        var binary = dataUrlToBinaryBytes(res.dataUrl);
-        var b122 = base122_encode(binary);
-        document.getElementById('product-image-data').value = b122;
-        cardImageRemoved = false;
-        var th = document.getElementById('product-image-thumb');
-        if (th) { th.src = res.dataUrl; th.classList.remove('hidden'); }
-        var kb = (b122.length * 8 / 7) / 1024;
-        if (note) note.textContent = 'Gotowe: ' + res.format.toUpperCase() + ' ~' + kb.toFixed(1) + ' KB (Base122).';
-        var rm = document.getElementById('product-image-remove');
-        if (rm) rm.classList.remove('hidden');
-        e.target.value = '';
-      }).catch(function () {
-        if (note) note.textContent = 'Nie udało się przetworzyć obrazu.';
-        e.target.value = '';
-      });
-    }
-    function handleCardImageRemove() {
-      document.getElementById('product-image-data').value = '';
-      cardImageRemoved = true;
-      var th = document.getElementById('product-image-thumb');
-      if (th) { th.classList.add('hidden'); th.src = ''; }
-      var note = document.getElementById('product-image-note');
-      if (note) note.textContent = 'Obraz zostanie usunięty po zapisie.';
-      var rm = document.getElementById('product-image-remove');
-      if (rm) rm.classList.add('hidden');
+    let cardImageB122 = '';
+    let cardInitial = '';
+    let cardImageToken = 0;
+    function syncCardFromPhotos() {
+      var src = productPhotos[0];
+      var token = ++cardImageToken;
+      if (!src) {
+        cardImageB122 = '';
+        var nEl = document.getElementById('product-card-note');
+        if (nEl) nEl.textContent = '';
+        return;
+      }
+      var img = new Image();
+      img.onload = function () {
+        if (token !== cardImageToken) return;
+        try {
+          var cv = drawScaled(img, img.naturalWidth || img.width || 1, img.naturalHeight || img.height || 1, 300);
+          var out = cv.toDataURL('image/webp', 0.85);
+          if (!out || out.indexOf('data:image/webp') !== 0) out = cv.toDataURL('image/jpeg', 0.85);
+          cardImageB122 = base122_encode(dataUrlToBinaryBytes(out));
+          var kb = (cardImageB122.length * 8 / 7) / 1024;
+          var nEl2 = document.getElementById('product-card-note');
+          if (nEl2) nEl2.textContent = 'Miniaturka karty: ~' + kb.toFixed(1) + ' KB.';
+        } catch (er) { cardImageB122 = ''; }
+      };
+      img.onerror = function () { if (token === cardImageToken) cardImageB122 = ''; };
+      img.src = src;
     }
 
     
@@ -3192,23 +3175,8 @@
       document.getElementById('product-stock').value = p.stock || 0;
       document.getElementById('product-visibility').value = (p.listed === false) ? 'niepubliczny' : 'publiczny';
       document.getElementById('product-download-enabled').checked = p.downloadEnabled !== false;
-      cardImageRemoved = false;
-      var cImgData = document.getElementById('product-image-data');
-      if (cImgData) cImgData.value = '';
-      var cThumb = document.getElementById('product-image-thumb');
-      var cNote = document.getElementById('product-image-note');
-      var cRm = document.getElementById('product-image-remove');
-      var storedCardImg = imageSrcFor(p.image);
-      if (cThumb && storedCardImg && storedCardImg.length > 20) {
-        cThumb.src = storedCardImg;
-        cThumb.classList.remove('hidden');
-        if (cNote) cNote.textContent = 'Obecny obraz karty.';
-        if (cRm) cRm.classList.remove('hidden');
-      } else {
-        if (cThumb) { cThumb.classList.add('hidden'); cThumb.src = ''; }
-        if (cNote) cNote.textContent = '';
-        if (cRm) cRm.classList.add('hidden');
-      }
+      cardInitial = p.image || '';
+      cardImageB122 = '';
       var isVariant = !!p.variantOf;
       var vTgl = document.getElementById('product-variant-toggle');
       var vSec = document.getElementById('variant-section');
@@ -3340,7 +3308,7 @@
         const stock = parseInt(document.getElementById('product-stock').value, 10) || 0;
         const listed = document.getElementById('product-visibility').value !== 'niepubliczny';
         const downloadEnabled = !!document.getElementById('product-download-enabled').checked;
-        const cardImageData = document.getElementById('product-image-data').value;
+        const cardImageData = productPhotos.length ? cardImageB122 : (cardImageB122 || cardInitial);
         const productColor = document.getElementById('product-color').value || 'czekolada';
         const whistleRaw = document.getElementById('product-whistle-freq').value.trim();
         const whistleFreq = whistleRaw ? whistleRaw.split(',').map(function (v) { return parseFloat(v.trim()); }).filter(function (v) { return !isNaN(v) && v > 0; }) : [];
@@ -3458,11 +3426,12 @@
           }
         }
 
-        if (cardImageData) docData.image = cardImageData;
+        if (cardImageData) {
+          docData.image = cardImageData;
+        } else if (editingProductId && products[editingProductId] && products[editingProductId].image) {
+          docData.image = firebase.firestore.FieldValue.delete();
+        }
         if (editingProductId) {
-          if (cardImageRemoved && !cardImageData && products[editingProductId] && products[editingProductId].image) {
-            docData.image = firebase.firestore.FieldValue.delete();
-          }
           await db.collection('products').doc(id).update(docData);
           flash('Produkt zaktualizowany.');
         } else {
@@ -3504,6 +3473,7 @@
       var vsR = document.getElementById('variant-section');
       if (vsR) vsR.classList.add('hidden');
       productPhotos = [];
+      cardInitial = '';
       renderPhotoPreviews();
       resetBundleUI();
       document.getElementById('admin-form-title').textContent = 'Dodaj nowy produkt';
@@ -4182,8 +4152,6 @@
       });
       document.getElementById('product-model').addEventListener('change', handleModelSelect);
       document.getElementById('product-photos').addEventListener('change', handlePhotosSelect);
-      document.getElementById('product-image-file').addEventListener('change', handleCardImageSelect);
-      document.getElementById('product-image-remove').addEventListener('click', handleCardImageRemove);
       document.getElementById('product-photos-preview').addEventListener('click', function (e) {
         var del = e.target.closest('[data-photo-del]');
         if (del) {
@@ -4542,7 +4510,6 @@
                 </div>
               </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             <div>
               <p class="block text-sm font-semibold text-slate-300 mb-1">Animacja 360° (wymagana)</p>
               <input id="product-color" type="hidden" value="czekolada" />
@@ -4583,16 +4550,6 @@
                 </div>
               </div>
             </div>
-            <div>
-              <label class="block text-sm font-semibold text-slate-300 mb-1">Prześlij obraz</label>
-              <input id="product-image-file" type="file" accept="image/*"
-                class="w-full text-sm text-slate-400 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-base file:text-accent file:font-semibold file:cursor-pointer" />
-              <input id="product-image-data" type="hidden" value="" />
-              <img id="product-image-thumb" alt="Podgląd obrazu" class="hidden mt-2 max-h-32 rounded-lg object-cover border border-white/10" />
-              <p id="product-image-note" class="text-xs text-slate-500 mt-1"></p>
-              <button id="product-image-remove" type="button" class="hidden mt-1 text-xs text-red-400 hover:text-red-300">Usuń obraz</button>
-            </div>
-            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             <div>
               <label class="block text-sm text-slate-400 mb-1">Plik 3D (STL, <span class="text-accent">wymagany</span> — z niego powstaje miniaturka)</label>
@@ -4602,12 +4559,13 @@
               <p id="product-model-info" class="text-xs text-slate-500 mt-1"></p>
             </div>
             <div>
-              <label class="block text-sm text-slate-400 mb-1">Dodatkowe zdjęcia (opcjonalnie)</label>
+              <label class="block text-sm text-slate-400 mb-1">Zdjęcia (opcjonalnie)</label>
               <input id="product-photos" type="file" accept="image/*" multiple
                 class="w-full text-sm text-slate-400 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-base file:text-accent file:font-semibold file:cursor-pointer" />
               <input id="product-photos-data" type="hidden" value="" />
               <div id="product-photos-preview" class="flex flex-wrap gap-2 mt-2"></div>
-              <p class="text-xs text-slate-500 mt-1">Miniaturka produktu to obrazek z modelu 3D. Te zdjęcia dodasz do galerii przeglądanej na podstronie oferty.</p>
+              <p id="product-card-note" class="text-xs text-slate-500 mt-1"></p>
+              <p class="text-xs text-slate-500 mt-1">Pierwsze zdjęcie jest miniaturką karty (gdy brak animacji 360°). Wszystkie trafiają do galerii na stronie oferty.</p>
             </div>
             </div>
             <div>
