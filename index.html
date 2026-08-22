@@ -1312,6 +1312,7 @@
       // Ustawienia (cena za gram, tryb, baner)
       unsubSettings = db.collection('settings').doc('main').onSnapshot(function (snap) {
         settings = snap.exists ? Object.assign({ whistle: true }, snap.data()) : settings;
+        applyBambusSettings();
         if (!firstDataLoaded && productsLoaded) firstDataLoaded = true;
         // Faza 3: pomiń render lokalnych projekcji (serwer potwierdzi i rerenderuje raz)
         if (!(snap.metadata && snap.metadata.hasPendingWrites)) scheduleRender();
@@ -1487,10 +1488,11 @@
           '</div>' +
           '</div>';
       }).join('');
-      // Po wstawieniu HTML wstawiamy obrazy (blob-URL z assets.json)
+      // Po wstawieniu HTML wstawiamy obrazy (blob-URL z assets.json lub custom upload)
       wrap.querySelectorAll('[data-printer-img]').forEach(function (holder) {
         const key = holder.dataset.printerImg;
-        const url = assetsImg(PRINTERS[key].imgKey);
+        const custom = PRINTERS[key] && PRINTERS[key].customImg;
+        const url = custom ? custom : assetsImg(PRINTERS[key].imgKey);
         if (url) holder.firstElementChild.src = url;
       });
       scheduleShake(active);
@@ -2431,6 +2433,22 @@
       document.getElementById('set-mode').value = settings.mode || '';
       var sw = document.getElementById('set-whistle');
       if (sw) sw.checked = settings.whistle !== false;
+      var bn = document.getElementById('set-bambus-name');
+      if (bn) bn.value = settings.bambusName || '';
+      var bi = document.getElementById('set-bambus-image-data');
+      if (bi) bi.value = settings.bambusImage || '';
+      var bp = document.getElementById('set-bambus-preview-img');
+      var bw = document.getElementById('set-bambus-image-preview');
+      if (bp && bw) {
+        if (settings.bambusImage) { bp.src = settings.bambusImage; bw.classList.remove('hidden'); }
+        else { bp.src = ''; bw.classList.add('hidden'); }
+      }
+      applyBambusSettings();
+    }
+    function applyBambusSettings() {
+      if (settings.bambusName) PRINTERS.bambus.name = settings.bambusName;
+      if (settings.bambusImage) PRINTERS.bambus.customImg = settings.bambusImage;
+      else delete PRINTERS.bambus.customImg;
     }
 
     /* --- W9: zbiorcza edycja stanów magazynowych --- */
@@ -3140,11 +3158,39 @@
       const banner = document.getElementById('set-banner').value.trim();
       const mode = document.getElementById('set-mode').value;
       const whistle = !!document.getElementById('set-whistle')?.checked;
+      const bambusName = document.getElementById('set-bambus-name').value.trim() || '';
+      const bambusImage = document.getElementById('set-bambus-image-data').value || '';
 
-      db.collection('settings').doc('main').set({ mode: mode, banner: banner, whistle: whistle, adminPasswordHash: settings.adminPasswordHash || '' })
-        .then(function () { settings.whistle = whistle; flash('Ustawienia zapisane.'); })
+      db.collection('settings').doc('main').set({ mode: mode, banner: banner, whistle: whistle, bambusName: bambusName, bambusImage: bambusImage, adminPasswordHash: settings.adminPasswordHash || '' })
+        .then(function () { settings.whistle = whistle; settings.bambusName = bambusName; settings.bambusImage = bambusImage; applyBambusSettings(); flash('Ustawienia zapisane.'); renderPrinters(); })
         .catch(function (e) { alert('Błąd: ' + e.message); });
     }
+    (function initBambusImageInput(){
+      var inp = document.getElementById('set-bambus-image');
+      var hid = document.getElementById('set-bambus-image-data');
+      var prev = document.getElementById('set-bambus-preview-img');
+      var wrap = document.getElementById('set-bambus-image-preview');
+      var clr = document.getElementById('set-bambus-image-clear');
+      if (!inp || !hid) return;
+      inp.addEventListener('change', function(){
+        var f = inp.files && inp.files[0];
+        if (!f) return;
+        if (f.size > 2 * 1024 * 1024) { alert('Obraz za duży (max 2 MB).'); inp.value=''; return; }
+        var r = new FileReader();
+        r.onload = function(ev){
+          hid.value = ev.target.result;
+          if (prev) prev.src = ev.target.result;
+          if (wrap) wrap.classList.remove('hidden');
+        };
+        r.readAsDataURL(f);
+      });
+      if (clr) clr.addEventListener('click', function(){
+        hid.value = '';
+        if (prev) prev.src = '';
+        if (wrap) wrap.classList.add('hidden');
+        if (inp) inp.value = '';
+      });
+    })();
 
     /* --- Tabela zamówień --- */
     function ordersFilterVal() {
@@ -3934,6 +3980,27 @@
                   <input id="set-whistle" type="checkbox" class="accent-accent" />
                   <span class="text-sm text-slate-400">Włącz gwizdek (przycisk „Odtwórz" na ofertach)</span>
                 </label>
+              </div>
+              <div class="lg:col-span-3 border-t border-white/10 pt-4 mt-2">
+                <h4 class="text-sm font-semibold text-slate-300 mb-3">Drukarka Bambus — dostosowanie</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm text-slate-400 mb-1">Nazwa drukarki Bambus</label>
+                    <input id="set-bambus-name" type="text" placeholder="Bambus"
+                      class="w-full bg-base border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-accent focus:outline-none" />
+                  </div>
+                  <div>
+                    <label class="block text-sm text-slate-400 mb-1">Obraz drukarki Bambus</label>
+                    <input id="set-bambus-image" type="file" accept="image/*"
+                      class="w-full text-sm text-slate-400 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-base file:text-accent file:font-semibold file:cursor-pointer" />
+                    <input id="set-bambus-image-data" type="hidden" value="" />
+                    <div id="set-bambus-image-preview" class="mt-2 hidden">
+                      <img id="set-bambus-preview-img" alt="Podgląd" class="max-h-24 rounded-lg border border-white/10" />
+                      <button type="button" id="set-bambus-image-clear" class="mt-1 text-xs text-red-400 hover:text-red-300">Usuń obraz</button>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">Zostaw puste aby użyć domyślnego obrazu z assets.json.</p>
+                  </div>
+                </div>
               </div>
             </form>
           </div>
