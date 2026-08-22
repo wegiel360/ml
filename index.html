@@ -715,6 +715,19 @@
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
       });
     }
+    function fmtDesc(s) {
+      var out = String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      var urls = [];
+      out = out.replace(/(https?:\/\/[^\s<]+)/g, function (m) { urls.push(m); return '\u0000' + (urls.length - 1) + '\u0000'; });
+      out = out.replace(/(^|[^\w])\*([^*\n]+)\*(?!\w)/g, '$1<strong>$2</strong>');
+      out = out.replace(/(^|[^\w])\/([^\/\n]+)\/(?!\w)/g, '$1<em>$2</em>');
+      out = out.replace(/(^|[^\w])_([^_\n]+)_(?!\w)/g, '$1<u>$2</u>');
+      out = out.replace(/(^|[^\w])-(\S(?:[^-\n]*\S)?)-(?![\w])/g, '$1<s>$2</s>');
+      out = out.replace(/(^|[^\w])'([^'\n]+)'(?!\w)/g, '$1<code class="font-mono text-[0.9em] bg-white/10 rounded px-1 py-0.5">$2</code>');
+      out = out.replace(/\u0000(\d+)\u0000/g, function (m, i) { var u = urls[parseInt(i, 10)]; return '<a href="' + u + '" target="_blank" rel="noopener noreferrer" class="text-accent hover:underline">' + u + '</a>'; });
+      out = out.split('\n').join('<br />');
+      return out;
+    }
 
     
     function fmtGrams(g) {
@@ -1583,6 +1596,50 @@
     }
 
     
+    var DISCLAIMER_DEFAULT = [
+      'UWAGA!',
+      'Produkt jest zrobiony z plastiku. Gryzienie lub branie go do ust może skutkować wprowadzeniem do organizmu szkodliwego mikroplastiku, bakterii zbierających się między warstwami druku itp. Nie jest to zabawka dla małych dzieci ani gryzak.',
+      'Nie odpowiadam za nieodpowiednie użycie tego *przedmiotu* przez nowego właściciela. Obejmuje to min.:',
+      '- Głośne gwizdanie na korytarzu szkolnym podczas lekcji i przerw (ryzyko uwagi lub konfiskaty przez nauczyciela).',
+      '- Używanie przedmiotu bezpośrednio przy uchu innych osób (grozi trwałym uszkodzeniem słuchu).',
+      '- Celowe straszenie zwierząt lub zakłócanie porządku publicznego.',
+      '- Samodzielne rozklejenie obudowy, zgubienie ruchomych wirników lub połknięcie małych części wariantu składanego.',
+      '- Uruchamianie przedmiotu w salach lekcyjnych, toaletach oraz w trakcie trwania sprawdzianów.',
+      '- Uszkodzenie lub stopienie modelu poprzez zostawienie go na pełnym słońcu, próby mycia w zmywarce/wrzątku lub tym podobnych. (PLA mięknie przy 50–60°C)',
+      'Produkt nie jest objęty żadną gwarancją ani rękojmią. Jest udostępniany w stanie, w jakim się znajduje.'
+    ].join('\n');
+    function disclaimerSource() {
+      var s = settings && settings.disclaimer;
+      return (typeof s === 'string' && s.trim()) ? s.replace(/\r\n/g, '\n') : DISCLAIMER_DEFAULT;
+    }
+    function renderDisclaimerBox() {
+      var lines = disclaimerSource().split('\n');
+      var html = '<div class="mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] p-5 text-sm leading-relaxed text-slate-300">';
+      var inList = false;
+      var seenPara = false;
+      lines.forEach(function (rawLine) {
+        var line = rawLine.trim();
+        if (!line) { if (inList) { html += '</ul>'; inList = false; } return; }
+        if (line.indexOf('- ') === 0 || line === '-') {
+          if (!inList) { html += '<ul class="list-disc pl-5 space-y-1 mb-3">'; inList = true; }
+          html += '<li>' + fmtDesc(line.slice(2)) + '</li>';
+          return;
+        }
+        if (inList) { html += '</ul>'; inList = false; }
+        if (!seenPara) {
+          html += '<p class="text-xl font-extrabold text-red-400 tracking-wide mb-2">' + fmtDesc(line) + '</p>';
+        } else if (line.slice(-1) === ':') {
+          html += '<p class="font-extrabold uppercase mb-2 mt-3 text-slate-100">' + fmtDesc(line) + '</p>';
+        } else {
+          html += '<p class="mb-3">' + fmtDesc(line) + '</p>';
+        }
+        seenPara = true;
+      });
+      if (inList) html += '</ul>';
+      html += '</div>';
+      return html;
+    }
+
     function renderProductDetail(productId) {
       var box = document.getElementById('product-detail-box');
       var p = products[productId];
@@ -1649,7 +1706,7 @@
           (totalSlides > 1
             ? '<button type="button" data-gall-prev class="gallery-arrow absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 text-lg z-10">&larr;</button>' +
               '<button type="button" data-gall-next class="gallery-arrow absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 text-lg z-10">&rarr;</button>' +
-              '<div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">' + Array.apply(null, { length: totalSlides }).map(function (_, d) { return '<span data-gall-dot="' + d + '" class="w-2 h-2 rounded-full bg-white/60 ' + (d === 0 && !p.preview ? 'opacity-100' : 'opacity-40') + '"></span>'; }).join('') + '</div>'
+              '<div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">' + Array.apply(null, { length: totalSlides }).map(function (_, d) { return '<span data-gall-dot="' + d + '" class="w-2 h-2 rounded-full bg-white/60 ' + (d === 0 ? 'opacity-100' : 'opacity-40') + '"></span>'; }).join('') + '</div>'
             : '')
           : (p.preview ? '' : '  <div class="w-full h-full flex items-center justify-center text-slate-600"><svg class="w-24 h-24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg></div>')) +
         '  </div>' +
@@ -1657,21 +1714,8 @@
         '    <div class="flex items-center justify-between gap-3">' +
         '    <h1 class="text-2xl font-bold text-white">' + esc(p.name) + '</h1>' +
         '  </div>' +
-        (p.desc ? '    <p class="text-slate-400 mt-4 leading-relaxed">' + esc(p.desc) + '</p>' : '') +
-        '    <div class="mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] p-5 text-sm leading-relaxed text-slate-300">' +
-        '      <p class="text-xl font-extrabold text-red-400 tracking-wide mb-2">UWAGA!</p>' +
-        '      <p class="mb-3">Produkt jest zrobiony z plastiku. Gryzienie lub branie go do ust może skutkować wprowadzeniem do organizmu szkodliwego mikroplastiku, toksycznych barwników oraz bakterii zbierających się między warstwami druku. Nie jest to zabawka dla małych dzieci ani gryzak.</p>' +
-        '      <p class="font-extrabold uppercase mb-2 text-slate-100">Nie odpowiadam za nieodpowiednie użycie tego przedmiotu przez nowego właściciela. Obejmuje to min.:</p>' +
-        '      <ul class="list-disc pl-5 space-y-1 mb-3">' +
-        '        <li>Głośne gwizdanie na korytarzu szkolnym podczas lekcji i przerw (ryzyko uwagi lub konfiskaty przez nauczyciela).</li>' +
-        '        <li>Używanie syreny bezpośrednio przy uchu innych osób (grozi trwałym uszkodzeniem słuchu).</li>' +
-        '        <li>Celowe straszenie zwierząt lub zakłócanie porządku publicznego.</li>' +
-        '        <li>Samodzielne rozklejenie obudowy, zgubienie ruchomych wirników lub połknięcie małych części wariantu składanego.</li>' +
-        '        <li>Uruchamianie syreny w salach lekcyjnych, toaletach oraz w trakcie trwania sprawdzianów.</li>' +
-        '        <li>Uszkodzenie lub stopienie modelu poprzez zostawienie go na pełnym słońcu, próby mycia w zmywarce/wrzątku lub tym podobnych. (PLA mięknie przy 50–60°C)</li>' +
-        '      </ul>' +
-        '      <p>Produkt nie jest objęty żadną gwarancją ani rękojmią. Jest udostępniany w stanie, w jakim się znajduje.</p>' +
-        '    </div>' +
+        (p.desc ? '    <p class="text-slate-400 mt-4 leading-relaxed">' + fmtDesc(p.desc) + '</p>' : '') +
+        renderDisclaimerBox() +
         (p.madeBy ? '    <p class="mt-4 text-2xl font-extrabold text-accent drop-shadow-[0_0_18px_rgba(0,148,115,0.45)]">' + t('Zrobione przez @') + esc(p.madeBy) + '</p>' : '') +
         '    <div class="mt-4 flex flex-wrap gap-2">' +
         '      <span class="bg-white/5 border border-white/10 rounded-full px-3 py-1 text-sm text-slate-300">' + fmtTime(p.printTimeSec) + ' ' + t('druku') + '</span>' +
@@ -1735,18 +1779,18 @@
       if (gallWrap) {
         gallWrap.addEventListener('click', function (e) {
           var im = e.target.closest('.pd-gall-img');
-          if (im) {
-            openLightbox(galleryImages, parseInt(im.dataset.gid, 10) || 0);
-          }
+          if (!im || im.dataset.gid === undefined) return;
+          openLightbox(galleryImages, parseInt(im.dataset.gid, 10) || 0);
         });
       }
 
-      if (galleryImages.length > 1) {
+      if (totalSlides > 1) {
         var gallCurrent = 0;
+        var gallOffset = p.preview ? 1 : 0;
         function gallShow(i) {
-          gallCurrent = (i + galleryImages.length) % galleryImages.length;
+          gallCurrent = (i + totalSlides) % totalSlides;
           var imgs = gallWrap.querySelectorAll('.pd-gall-img');
-          imgs.forEach(function (im, idx) { im.classList.toggle('hidden', idx !== gallCurrent); });
+          imgs.forEach(function (im, idx) { im.classList.toggle('hidden', idx !== gallCurrent + gallOffset); });
           gallWrap.querySelectorAll('[data-gall-dot]').forEach(function (d, di) {
             d.classList.toggle('opacity-100', di === gallCurrent);
             d.classList.toggle('opacity-40', di !== gallCurrent);
@@ -2628,6 +2672,8 @@
 
     function renderAdminSettings() {
       document.getElementById('set-banner').value = settings.banner || '';
+      var sdEl = document.getElementById('set-disclaimer');
+      if (sdEl) sdEl.value = (typeof settings.disclaimer === 'string' && settings.disclaimer.trim()) ? settings.disclaimer : DISCLAIMER_DEFAULT;
       document.getElementById('set-mode').value = settings.mode || '';
       var pscBox = document.getElementById('printer-status-controls');
       if (pscBox) {
@@ -3295,6 +3341,24 @@
       const submitBtn = document.getElementById('admin-form-submit');
       const errBox = document.getElementById('admin-form-error');
       function err(msg) { if (errBox) { errBox.textContent = msg; errBox.classList.remove('hidden'); } }
+      function saveProgress(pct, label) {
+        var box = document.getElementById('admin-save-progress');
+        if (!box) return;
+        box.classList.remove('hidden');
+        var p = Math.max(0, Math.min(100, Math.round(pct)));
+        var bar = document.getElementById('admin-save-bar');
+        var pctEl = document.getElementById('admin-save-pct');
+        var lblEl = document.getElementById('admin-save-label');
+        if (bar) bar.style.width = p + '%';
+        if (pctEl) pctEl.textContent = p + '%';
+        if (lblEl && label) lblEl.textContent = label;
+      }
+      function saveProgressHide() {
+        var box = document.getElementById('admin-save-progress');
+        if (box) box.classList.add('hidden');
+        var bar = document.getElementById('admin-save-bar');
+        if (bar) bar.style.width = '0%';
+      }
 
       try {
         if (errBox) errBox.classList.add('hidden');
@@ -3349,6 +3413,8 @@
         const id = editingProductId || genUUID();
 
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Zapisywanie...'; }
+        errBox.classList.add('hidden');
+        saveProgress(4, 'Przygotowanie…');
 
         
         if (newFile) {
@@ -3362,6 +3428,7 @@
           const oldSnap = await col.orderBy('index').get();
           const oldRefs = [];
           oldSnap.forEach(function (d) { oldRefs.push(d.ref); });
+          saveProgress(8, 'Czyszczenie starego modelu…');
           for (let oi = 0; oi < oldRefs.length; oi += 300) {
             const sub = db.batch();
             for (let oj = oi; oj < Math.min(oi + 300, oldRefs.length); oj++) sub.delete(oldRefs[oj]);
@@ -3376,7 +3443,9 @@
               sub.set(col.doc(String(j)), { index: j, total: chunks.length, data: chunks[j] });
             }
             await sub.commit();
-            if (submitBtn) submitBtn.textContent = 'Zapisywanie… (' + Math.min(ci + perBatch, chunks.length) + '/' + chunks.length + ')';
+            var doneN = Math.min(ci + perBatch, chunks.length);
+            saveProgress(10 + 55 * doneN / chunks.length, 'Model 3D: ' + doneN + '/' + chunks.length + ' części');
+            if (submitBtn) submitBtn.textContent = 'Zapisywanie… (' + doneN + '/' + chunks.length + ')';
             await new Promise(function (r) { setTimeout(r, 0); }); 
           }
           docData.model = { name: newFile.name, totalChunks: chunks.length, size: b122.length };
@@ -3401,7 +3470,9 @@
               sub.set(pCol.doc(String(j)), { index: j, total: pChunks.length, data: pChunks[j] });
             }
             await sub.commit();
-            if (submitBtn) submitBtn.textContent = 'Zapisywanie… (animacja ' + Math.min(ci + 10, pChunks.length) + '/' + pChunks.length + ')';
+            var pdoneN = Math.min(ci + 10, pChunks.length);
+            saveProgress(68 + 25 * pdoneN / pChunks.length, 'Animacja 360°: ' + pdoneN + '/' + pChunks.length + ' części');
+            if (submitBtn) submitBtn.textContent = 'Zapisywanie… (animacja ' + pdoneN + '/' + pChunks.length + ')';
             await new Promise(function (r) { setTimeout(r, 0); });
           }
           docData.preview = { totalChunks: pChunks.length, size: previewB122.length };
@@ -3432,18 +3503,23 @@
           docData.image = firebase.firestore.FieldValue.delete();
         }
         if (editingProductId) {
+          saveProgress(96, 'Zapisywanie zmian…');
           await db.collection('products').doc(id).update(docData);
           flash('Produkt zaktualizowany.');
         } else {
+          saveProgress(96, 'Dodawanie produktu…');
           docData.createdAt = Date.now();
           await db.collection('products').doc(id).set(docData);
           flash('Produkt dodany.');
         }
+        saveProgress(100, 'Gotowe.');
+        await new Promise(function (r) { setTimeout(r, 250); });
         resetProductForm();
       } catch (er) {
         console.error('Zapis produktu nieudany:', er);
         err('Błąd: ' + (er && er.message ? er.message : er));
       } finally {
+        saveProgressHide();
         if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = editingProductId ? 'Zapisz zmiany' : 'Dodaj produkt'; }
       }
     }
@@ -3487,13 +3563,15 @@
       e.preventDefault();
       const banner = document.getElementById('set-banner').value.trim();
       const mode = document.getElementById('set-mode').value;
+      const disclaimerEl = document.getElementById('set-disclaimer');
+      const disclaimer = disclaimerEl ? disclaimerEl.value : '';
       const printersStatus = {};
       document.querySelectorAll('#printer-status-controls [data-printer-status]').forEach(function (sel) {
         printersStatus[sel.dataset.printerStatus] = sel.value;
       });
 
-      db.collection('settings').doc('main').set({ mode: mode, banner: banner, printersStatus: printersStatus, adminPasswordHash: settings.adminPasswordHash || '' })
-        .then(function () { settings.mode = mode; settings.banner = banner; settings.printersStatus = printersStatus; flash('Ustawienia zapisane.'); })
+      db.collection('settings').doc('main').set({ mode: mode, banner: banner, disclaimer: disclaimer, printersStatus: printersStatus, adminPasswordHash: settings.adminPasswordHash || '' })
+        .then(function () { settings.mode = mode; settings.banner = banner; settings.disclaimer = disclaimer; settings.printersStatus = printersStatus; flash('Ustawienia zapisane.'); })
         .catch(function (e) { alert('Błąd: ' + e.message); });
     }
 
@@ -4358,6 +4436,12 @@
                 <input id="set-banner" type="text"
                   class="w-full bg-base border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-accent focus:outline-none" />
               </div>
+              <div class="sm:col-span-2 lg:col-span-3">
+                <label class="block text-sm text-slate-400 mb-1">Napis UWAGA! (disclaimer na stronie produktu)</label>
+                <textarea id="set-disclaimer" rows="6"
+                  class="w-full bg-base border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-accent focus:outline-none"></textarea>
+                <p class="text-xs text-slate-500 mt-1">Pierwsza linia = duży czerwony nagłówek, linie zaczynające się od „- " tworzą listę punktów, linia kończąca się dwukropkiem = podtytuł. Formatowanie: *pogrubienie*, /kursywa/, _podkreślenie_, -skreślenie-, 'monospace'.</p>
+              </div>
               <div class="lg:col-span-3 flex items-end">
                 <button type="submit"
                   class="px-6 py-2.5 rounded-xl font-semibold bg-accent text-slate-900 transition-all">Zapisz ustawienia</button>
@@ -4386,6 +4470,7 @@
               <label class="block text-sm text-slate-400 mb-1">Opis</label>
               <textarea id="product-desc" rows="2" placeholder="Krótki opis wydruku"
                 class="w-full bg-base border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-accent focus:outline-none"></textarea>
+              <p class="text-xs text-slate-500 mt-1">Formatowanie: *pogrubienie*, /kursywa/, _podkreślenie_, -skreślenie-, 'monospace'. Linki wklejone jako tekst są klikalne.</p>
             </div>
             <div>
               <label class="flex items-center gap-2 cursor-pointer">
@@ -4584,6 +4669,15 @@
                 class="flex-1 py-2.5 rounded-xl font-semibold bg-accent text-slate-900 transition-all">Zapisz produkt</button>
               <button type="button" id="admin-form-reset" onclick="resetProductForm()"
                 class="px-4 py-2.5 rounded-xl font-semibold bg-base border border-white/10 text-slate-300 hover:border-white/30 transition-all">Wyczyść</button>
+            </div>
+            <div id="admin-save-progress" class="hidden">
+              <div class="flex justify-between text-xs text-slate-400 mb-1">
+                <span id="admin-save-label">Zapisywanie…</span>
+                <span id="admin-save-pct">0%</span>
+              </div>
+              <div class="w-full h-2 rounded-full bg-base overflow-hidden border border-white/10">
+                <div id="admin-save-bar" class="h-full bg-accent transition-all duration-200" style="width:0%"></div>
+              </div>
             </div>
           </form>
         </div>
